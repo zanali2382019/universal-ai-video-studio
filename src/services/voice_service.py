@@ -90,7 +90,7 @@ class VoiceSynthesisService:
 
         async def _run_communicate():
             comm = edge_tts.Communicate(text=text, voice=voice_id, rate=rate_str, volume=vol_str)
-            await comm.save(str(tmp_mp3_path))
+            await asyncio.wait_for(comm.save(str(tmp_mp3_path)), timeout=5.0)
 
         try:
             try:

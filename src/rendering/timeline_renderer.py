@@ -625,7 +625,9 @@ class TimelineRenderer:
                 if a.id not in resolved_audio_asset_ids:
                     resolved_audio_asset_ids.append(a.id)
             for apath in [voiceover_track_path, background_music_path, audio_track_path]:
-                if apath and (str(apath).endswith(a.file_path) or a.file_name in str(apath)):
+                fpath = str(getattr(a, "file_path", "") or "")
+                fname = str(getattr(a, "file_name", "") or "")
+                if apath and ((fpath and str(apath).endswith(fpath)) or (fname and fname in str(apath))):
                     if a.id not in resolved_audio_asset_ids:
                         resolved_audio_asset_ids.append(a.id)
 

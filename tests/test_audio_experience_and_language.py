@@ -35,6 +35,17 @@ from src.rendering.ffmpeg_wrapper import FFmpegWrapper
 from src.rendering.probe_service import MediaProbeService
 
 
+def _is_network_available(host="speech.platform.bing.com", port=443, timeout=0.5) -> bool:
+    import socket
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.settimeout(timeout)
+            s.connect((host, port))
+            return True
+    except Exception:
+        return False
+
+
 class TestAudioExperienceAndLanguage(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -238,6 +249,8 @@ class TestAudioExperienceAndLanguage(unittest.TestCase):
 
     def test_10_synthesize_arabic_speech_provider(self):
         """Synthesizes real Arabic speech audio using Microsoft Naayf voice."""
+        if not _is_network_available():
+            self.skipTest("Online neural TTS endpoint not reachable in offline/CI environment")
         with tempfile.TemporaryDirectory() as tmp_dir:
             out_file = Path(tmp_dir) / "test_ar_voice.aac"
             res = self.voice_service.synthesize_voiceover(
@@ -259,6 +272,8 @@ class TestAudioExperienceAndLanguage(unittest.TestCase):
 
     def test_11_synthesize_english_speech_provider(self):
         """Synthesizes real English speech audio using English voice."""
+        if not _is_network_available():
+            self.skipTest("Online neural TTS endpoint not reachable in offline/CI environment")
         with tempfile.TemporaryDirectory() as tmp_dir:
             out_file = Path(tmp_dir) / "test_en_voice.aac"
             res = self.voice_service.synthesize_voiceover(

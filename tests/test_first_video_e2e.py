@@ -29,14 +29,21 @@ class TestFirstVideoE2E(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.settings = get_settings()
-        cls.db_manager = DatabaseManager()
-        cls.wrapper = FFmpegWrapper()
-        cls.probe_service = MediaProbeService(ffmpeg_wrapper=cls.wrapper)
-
         cls.channel_id = "ch_dreammatter_001"
         cls.project_id = "proj_dm_tommy_bubble_001"
         cls.channel_dir = cls.settings.channels_root / cls.channel_id
         cls.final_video_path = cls.channel_dir / "exports" / "videos" / "tommy_first_video_9_16.mp4"
+
+        if not cls.final_video_path.exists():
+            raise unittest.SkipTest(
+                f"Production video not present locally (clean clone/CI mode): {cls.final_video_path.name}"
+            )
+        if not cls.settings.db_path.exists():
+            raise unittest.SkipTest("Production studio.db not present locally (clean clone/CI mode)")
+
+        cls.db_manager = DatabaseManager()
+        cls.wrapper = FFmpegWrapper()
+        cls.probe_service = MediaProbeService(ffmpeg_wrapper=cls.wrapper)
 
     def test_01_final_mp4_file_existence_and_size(self):
         """Scenario 1: Final MP4 file exists and has non-trivial production size (> 1 MB)."""

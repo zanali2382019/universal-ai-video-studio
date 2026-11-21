@@ -120,15 +120,24 @@ GEMINI_API_KEY=your_key_here
 python -c "from src.database.connection import get_db_manager; from src.database.migrations import MigrationManager; MigrationManager(get_db_manager()).run_migrations()"
 ```
 
-### 4. Run Test Suites
+### 4. Run Test Automation Suites (Task 3.10)
+
+The project includes a unified test runner with clean environment isolation and pre-flight checks:
 
 ```bash
-# Run unit & storage separation tests
-python -m unittest tests/test_task_39_storage_separation.py
+# 1. Run portable test suite (Unit, Integration, SQLite, StorageService, WorkerPool, synthetic FFmpeg render)
+# Recommended for clean developer setups and CI environments:
+python scripts/run_tests.py --suite portable
 
-# Run Episode 03 end-to-end acceptance tests
-python -m unittest tests/test_episode_03_e2e.py
+# 2. Run local production acceptance tests (verifies Episode 01, 02, and 03 deliverables):
+python scripts/run_tests.py --suite production
+
+# 3. Run all tests:
+python scripts/run_tests.py --suite all
 ```
+
+> [!NOTE]
+> In clean CI environments where production media files are not checked into Git, production tests automatically skip (`unittest.SkipTest`) without error, while all portable unit, integration, and synthetic rendering tests run and validate 100% offline.
 
 ---
 
