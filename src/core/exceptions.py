@@ -118,6 +118,10 @@ class RenderingException(StudioException):
         super().__init__(message, error_code="RENDER_ERROR", details=merged_details)
 
 
+# Convenient alias
+RenderingError = RenderingException
+
+
 class FFmpegNotFoundException(RenderingException):
     """Raised when the ffmpeg or ffprobe executable binary cannot be found."""
     def __init__(self, binary_name: str, searched_path: Optional[str] = None):

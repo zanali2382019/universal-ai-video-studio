@@ -445,3 +445,6 @@ class MigrationManager:
             logger.debug("Database schema is up to date.")
 
         return newly_applied
+
+    # Convenient alias
+    apply_all_migrations = run_migrations

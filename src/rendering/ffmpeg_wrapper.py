@@ -295,6 +295,9 @@ class FFmpegWrapper:
         cmd = [self.ffmpeg_path] + [str(a) for a in args]
         return self._execute_process(cmd, timeout_sec=effective_timeout, check=check, cancellation_token=cancellation_token, is_ffprobe=False)
 
+    # Convenient alias
+    run = run_ffmpeg
+
     def run_ffprobe(
         self,
         args: List[str],

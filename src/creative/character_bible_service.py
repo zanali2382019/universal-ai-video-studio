@@ -107,7 +107,7 @@ class CharacterBibleService:
                     "eye_color": "sparkling warm chestnut brown",
                     "body_type": "chubby toddler proportions, 3 heads tall silhouette",
                 },
-                hair_and_face_description="unruly mop of bouncy brown curls, big warm expressive brown eyes, cute button nose, rosy chubby cheeks, cheerful toothy smile",
+                hair_and_face_description="unruly mop of bouncy brown curls, big warm expressive brown eyes, cute button nose, rosy chubby toddler cheeks, cheerful toothy smile",
                 movement_characteristics="energetic bouncy toddler steps, spontaneous giggles, wide inquisitive gestures",
                 expressions={
                     "happy": "beaming smile with bright eyes and rosy cheeks",
