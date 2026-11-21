@@ -340,6 +340,57 @@ MIGRATIONS: List[Tuple[int, str, str]] = [
         CREATE INDEX IF NOT EXISTS idx_prompt_packages_channel ON prompt_packages(channel_id);
         """,
     ),
+    (
+        6,
+        "006_task_3_13_flow_inbound",
+        """
+        -- Flow Scene Takes & Versioning Table (Task 3.13)
+        CREATE TABLE IF NOT EXISTS flow_scene_takes (
+            id TEXT PRIMARY KEY,
+            channel_id TEXT NOT NULL REFERENCES channels(id) ON DELETE CASCADE,
+            project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+            scene_id TEXT NOT NULL,
+            prompt_version INTEGER NOT NULL DEFAULT 1,
+            take_number INTEGER NOT NULL DEFAULT 1,
+            asset_id TEXT NOT NULL REFERENCES media_assets(id) ON DELETE CASCADE,
+            asset_role TEXT NOT NULL DEFAULT 'video',
+            file_sha256 TEXT NOT NULL,
+            source_file_name TEXT NOT NULL,
+            storage_key TEXT NOT NULL,
+            duration_sec REAL,
+            width INTEGER,
+            height INTEGER,
+            fps REAL,
+            is_active INTEGER NOT NULL DEFAULT 1,
+            metadata_json TEXT NOT NULL DEFAULT '{}',
+            created_at TEXT NOT NULL,
+            UNIQUE (project_id, scene_id, take_number, asset_role)
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_flow_takes_scene ON flow_scene_takes(project_id, scene_id, is_active);
+        CREATE INDEX IF NOT EXISTS idx_flow_takes_asset ON flow_scene_takes(asset_id);
+        CREATE INDEX IF NOT EXISTS idx_flow_takes_sha ON flow_scene_takes(channel_id, file_sha256);
+
+        -- Flow Inbound Ingestion Records Table (Task 3.13)
+        CREATE TABLE IF NOT EXISTS flow_inbound_records (
+            id TEXT PRIMARY KEY,
+            channel_id TEXT NOT NULL REFERENCES channels(id) ON DELETE CASCADE,
+            project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+            package_id TEXT,
+            source_type TEXT NOT NULL,
+            source_identifier TEXT NOT NULL,
+            total_inspected INTEGER NOT NULL DEFAULT 0,
+            imported_count INTEGER NOT NULL DEFAULT 0,
+            duplicate_count INTEGER NOT NULL DEFAULT 0,
+            failed_count INTEGER NOT NULL DEFAULT 0,
+            report_json TEXT NOT NULL DEFAULT '{}',
+            created_at TEXT NOT NULL
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_flow_inbound_proj ON flow_inbound_records(project_id, created_at DESC);
+        CREATE INDEX IF NOT EXISTS idx_flow_inbound_chan ON flow_inbound_records(channel_id);
+        """,
+    ),
 ]
 
 

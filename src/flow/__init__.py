@@ -12,6 +12,7 @@ from src.flow.schemas import (
     PromptPackageExportResult,
 )
 from src.flow.prompt_service import FlowPromptService
+from src.flow.inbound import FlowInboundService
 
 __all__ = [
     "FlowGenerationMode",
@@ -24,5 +25,6 @@ __all__ = [
     "PromptPackage",
     "PromptPackageExportResult",
     "FlowPromptService",
+    "FlowInboundService",
 ]
 
