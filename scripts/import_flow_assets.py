@@ -68,7 +68,10 @@ def cmd_import(args: argparse.Namespace) -> int:
         print(f" Record ID         : {report.inbound_record_id}")
         print(f" Source Type       : {report.source_type.value}")
         print(f" Total Inspected   : {report.total_inspected}")
-        print(f" Imported (New)    : {report.imported_count}")
+        if report.is_dry_run:
+            print(f" Would Import (New): {report.would_import_count}")
+        else:
+            print(f" Imported (New)    : {report.imported_count}")
         print(f" Duplicates Skipped: {report.duplicate_count}")
         print(f" Versions Updated  : {report.updated_version_count}")
         print(f" Failed Items      : {report.failed_count}")
@@ -79,6 +82,7 @@ def cmd_import(args: argparse.Namespace) -> int:
         for idx, item in enumerate(report.items, 1):
             status_symbol = {
                 "imported": "[NEW]",
+                "would_import": "[WOULD_IMPORT]",
                 "skipped_duplicate": "[DUP]",
                 "updated_version": "[VER]",
                 "failed": "[ERR]",

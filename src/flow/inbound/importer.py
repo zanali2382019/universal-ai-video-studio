@@ -177,6 +177,7 @@ class FlowInboundService:
             # 5. Process matched candidates
             item_reports: List[InboundImportItemReport] = []
             imported_count = 0
+            would_import_count = 0
             duplicate_count = 0
             updated_count = 0
             failed_count = 0
@@ -194,6 +195,8 @@ class FlowInboundService:
 
                 if report_item.status == InboundItemStatus.IMPORTED:
                     imported_count += 1
+                elif report_item.status == InboundItemStatus.WOULD_IMPORT:
+                    would_import_count += 1
                 elif report_item.status == InboundItemStatus.SKIPPED_DUPLICATE:
                     duplicate_count += 1
                 elif report_item.status == InboundItemStatus.UPDATED_VERSION:
@@ -231,6 +234,7 @@ class FlowInboundService:
                 is_dry_run=dry_run,
                 total_inspected=len(matched_candidates),
                 imported_count=imported_count,
+                would_import_count=would_import_count,
                 duplicate_count=duplicate_count,
                 updated_version_count=updated_count,
                 failed_count=failed_count,
@@ -348,9 +352,13 @@ class FlowInboundService:
                 project_id, match.scene_id, match.asset_role
             )
             take_number = max(match.take_number, next_num)
+            # Retain previous active take; new version requires explicit activate-take
+            is_active_for_take = False
         else:
             status = InboundItemStatus.IMPORTED
             take_number = 1
+            # Initial take for this scene becomes active by default
+            is_active_for_take = True
 
         if dry_run:
             return InboundImportItemReport(
@@ -358,9 +366,9 @@ class FlowInboundService:
                 scene_id=match.scene_id,
                 take_number=take_number,
                 asset_role=match.asset_role,
-                status=status,
+                status=InboundItemStatus.WOULD_IMPORT,
                 sha256=file_sha256,
-                details="Dry-run: validated and matched successfully.",
+                details=f"Dry-run: validated successfully. Would import as Take #{take_number} ({match.asset_role}).",
             )
 
         # 4. StorageService persistence with POSIX relative key
@@ -404,18 +412,19 @@ class FlowInboundService:
             )
             self._asset_repo.create(asset_create)
 
-            # Register license explicitly attributing Google Flow
+            # Register license adhering strictly to ADR-008:
+            # Google Flow source requires commercial rights review before export clearance
             self._license_repo.create(
                 AssetLicenseCreate(
                     id=lic_ref,
                     asset_id=asset_id,
                     channel_id=channel_id,
                     legal_basis="proprietary_ownership",
-                    verification_status="verified",
-                    commercial_use_allowed=True,
+                    verification_status="pending_review",
+                    commercial_use_allowed=False,
                     attribution_required=False,
                     rights_owner="Google Flow Generated Asset",
-                    notes="Imported via Google Flow Inbound Integration (Task 3.13).",
+                    notes="Imported via Google Flow Inbound Integration (Task 3.13). Pending commercial rights verification per ADR-008.",
                 )
             )
 
@@ -440,7 +449,7 @@ class FlowInboundService:
             width=val_res.width,
             height=val_res.height,
             fps=val_res.fps,
-            is_active=True,
+            is_active=is_active_for_take,
             metadata=match.raw_metadata,
         )
 

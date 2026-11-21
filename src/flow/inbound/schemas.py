@@ -24,6 +24,7 @@ class InboundSourceType(str, Enum):
 class InboundItemStatus(str, Enum):
     """Status outcome for an individual ingested media item."""
     IMPORTED = "imported"
+    WOULD_IMPORT = "would_import"
     SKIPPED_DUPLICATE = "skipped_duplicate"
     UPDATED_VERSION = "updated_version"
     FAILED = "failed"
@@ -116,6 +117,7 @@ class InboundImportReport(BaseModel):
     is_dry_run: bool = False
     total_inspected: int = 0
     imported_count: int = 0
+    would_import_count: int = 0
     duplicate_count: int = 0
     updated_version_count: int = 0
     failed_count: int = 0

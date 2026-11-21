@@ -97,7 +97,10 @@ class TestTask313FlowInbound(unittest.TestCase):
             )
 
     def tearDown(self):
-        self.temp_dir.cleanup()
+        try:
+            self.temp_dir.cleanup()
+        except Exception:
+            pass
         get_settings(reload=True)
 
     def _create_synthetic_video(self, output_path: Path, color: str = "blue", duration_sec: float = 1.0) -> Path:
@@ -269,6 +272,15 @@ class TestTask313FlowInbound(unittest.TestCase):
         # Verify storage existence
         self.assertTrue(self.storage.exists(active_s1["storage_key"]))
 
+        # Verify ADR-008 compliance: Flow assets require review and are not auto-cleared for commercial export
+        with self.db_manager.connection() as conn:
+            lic = conn.execute(
+                "SELECT * FROM asset_licenses WHERE asset_id = ?;", (active_s1["asset_id"],)
+            ).fetchone()
+        self.assertIsNotNone(lic)
+        self.assertEqual(lic["verification_status"], "pending_review")
+        self.assertEqual(lic["commercial_use_allowed"], 0)
+
     # =========================================================================
     # Test 4: Streaming SHA-256 Deduplication & Idempotency
     # =========================================================================
@@ -338,16 +350,16 @@ class TestTask313FlowInbound(unittest.TestCase):
         all_takes = self.inbound_repo.list_takes_for_scene(self.project_id, "sc_test_01", "video")
         self.assertEqual(len(all_takes), 2)
 
-        # Verify Take 2 automatically became active
+        # Verify previous active take (Take 1) is preserved as active!
         active_now = self.inbound_repo.get_active_take(self.project_id, "sc_test_01", "video")
-        self.assertEqual(active_now["take_number"], 2)
+        self.assertEqual(active_now["take_number"], 1)
 
-        # Switch active take back to Take 1
-        success = self.inbound_service.set_active_take(self.project_id, "sc_test_01", take_number=1)
+        # Switch active take to Take 2 via explicit activation
+        success = self.inbound_service.set_active_take(self.project_id, "sc_test_01", take_number=2)
         self.assertTrue(success)
 
-        active_reverted = self.inbound_repo.get_active_take(self.project_id, "sc_test_01", "video")
-        self.assertEqual(active_reverted["take_number"], 1)
+        active_promoted = self.inbound_repo.get_active_take(self.project_id, "sc_test_01", "video")
+        self.assertEqual(active_promoted["take_number"], 2)
 
     # =========================================================================
     # Test 6: Rejection of Corrupt Media Files
@@ -390,7 +402,10 @@ class TestTask313FlowInbound(unittest.TestCase):
         )
 
         self.assertTrue(report.is_dry_run)
-        self.assertEqual(report.imported_count, 1)
+        self.assertEqual(report.would_import_count, 1)
+        self.assertEqual(report.imported_count, 0)
+        self.assertEqual(report.items[0].status, InboundItemStatus.WOULD_IMPORT)
+        self.assertIn("Would import as Take #1", report.items[0].details)
 
         # In DB: 0 takes should be written
         takes = self.inbound_repo.list_takes_for_project(self.project_id)
