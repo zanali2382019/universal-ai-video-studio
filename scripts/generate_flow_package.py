@@ -88,6 +88,7 @@ def cmd_generate(args, service: FlowPromptService):
         manifest_data_or_path=args.manifest,
         flow_project_name=args.flow_project,
         flow_workspace_ref=args.flow_workspace,
+        outfit_id=getattr(args, "outfit", None),
     )
 
     print(f" Package ID   : {package.package_id}")
@@ -172,6 +173,7 @@ def cmd_export(args, service: FlowPromptService):
         manifest_data_or_path=args.manifest,
         flow_project_name=args.flow_project,
         flow_workspace_ref=args.flow_workspace,
+        outfit_id=getattr(args, "outfit", None),
     )
 
     result = service.export_package(package)
@@ -210,6 +212,7 @@ def main():
     p_gen = subparsers.add_parser("generate", help="Synthesize Master and Scene Prompts")
     p_gen.add_argument("-c", "--channel", default="ch_dreammatter_001", help="Channel ID")
     p_gen.add_argument("-m", "--manifest", required=True, help="Path to episode manifest JSON")
+    p_gen.add_argument("--outfit", help="Specific outfit profile ID (e.g. 'gardening', 'stargazer_pajamas')")
     p_gen.add_argument("--flow-project", help="Project name in Google Flow UI")
     p_gen.add_argument("--flow-workspace", help="Workspace reference in Google Flow")
 
@@ -232,6 +235,7 @@ def main():
     p_export = subparsers.add_parser("export", help="Export package to JSON & Markdown via StorageService")
     p_export.add_argument("-c", "--channel", default="ch_dreammatter_001", help="Channel ID")
     p_export.add_argument("-m", "--manifest", required=True, help="Path to episode manifest JSON")
+    p_export.add_argument("--outfit", help="Specific outfit profile ID (e.g. 'gardening', 'stargazer_pajamas')")
     p_export.add_argument("--flow-project", help="Project name in Google Flow UI")
     p_export.add_argument("--flow-workspace", help="Workspace reference in Google Flow")
 

@@ -37,6 +37,9 @@ class FlowPromptService:
         self,
         db_manager: Optional[DatabaseManager] = None,
         storage_service: Optional[StorageService] = None,
+        channel_profile_service: Optional[Any] = None,
+        character_bible_service: Optional[Any] = None,
+        rules_engine: Optional[Any] = None,
     ):
         self.db_manager = db_manager or get_db_manager()
         self.storage_service = storage_service or StorageService()
@@ -45,6 +48,14 @@ class FlowPromptService:
         self.project_repo = ProjectRepository(self.db_manager)
         self.scene_repo = SceneRepository(self.db_manager)
         self.asset_repo = AssetRepository(self.db_manager)
+
+        from src.creative.channel_profile_service import ChannelProfileService
+        from src.creative.character_bible_service import CharacterBibleService
+        from src.creative.rules_engine import CreativeRulesEngine
+
+        self.channel_profile_service = channel_profile_service or ChannelProfileService(self.storage_service)
+        self.character_bible_service = character_bible_service or CharacterBibleService(self.storage_service)
+        self.rules_engine = rules_engine or CreativeRulesEngine()
 
     # -------------------------------------------------------------------------
     # Package Construction (Outbound)
@@ -57,6 +68,7 @@ class FlowPromptService:
         flow_project_name: Optional[str] = None,
         flow_workspace_ref: Optional[str] = None,
         package_version: Optional[int] = None,
+        outfit_id: Optional[str] = None,
     ) -> PromptPackage:
         """Construct a complete, versioned Google Flow PromptPackage from an episode manifest."""
         manifest: Dict[str, Any]
@@ -98,9 +110,10 @@ class FlowPromptService:
             target_duration_sec=target_duration,
         )
 
-        # 3. Channel Default Style & Character Anchors
+        # 3. Channel Default Style & Character Anchors via Creative Services
         master_style = self._resolve_channel_style(channel_id)
-        character_refs = self._resolve_channel_characters(channel_id, manifest)
+        character_refs = self._resolve_channel_characters(channel_id, manifest, outfit_id=outfit_id)
+        primary_char = self._resolve_primary_character_bible_entry(channel_id, manifest)
 
         # 4. Master Episode Prompt
         master_prompt = (
@@ -111,6 +124,7 @@ class FlowPromptService:
         # 5. Scene Prompt Specifications
         scenes_data = manifest.get("scenes", [])
         scene_specs: List[ScenePromptSpecification] = []
+        total_scenes = len(scenes_data)
 
         for idx, sc in enumerate(scenes_data, start=1):
             sc_id = sc.get("id", f"sc_{project_id}_{idx:02d}")
@@ -133,17 +147,16 @@ class FlowPromptService:
                     title=sc_title,
                     narration=narration,
                     scene_index=idx,
-                    total_scenes=len(scenes_data),
+                    total_scenes=total_scenes,
                     character_refs=character_refs,
                 )
 
-            # Directives
-            camera_dir = self._synthesize_camera_instruction(idx, len(scenes_data))
-            lighting_dir = "Warm golden morning sunlight, soft ambient glow, subtle particle reflections."
-            motion_dir = "Dynamic smooth character animation, natural playful gestures, high responsiveness."
-            continuity_dir = (
-                f"Maintain Tommy character visual consistency from Scene {max(1, idx-1)}: yellow t-shirt and blue denim overalls."
-                if character_refs else "Maintain visual style and world continuity."
+            # Directives via Rules Engine
+            camera_dir = self.rules_engine.resolve_camera_directive(idx, total_scenes)
+            lighting_dir = self.rules_engine.resolve_lighting_directive(idx, total_scenes)
+            motion_dir = self.rules_engine.resolve_motion_directive(idx, total_scenes)
+            continuity_dir = self.rules_engine.resolve_continuity_directive(
+                idx, character=primary_char, outfit_id=outfit_id
             )
 
             # Check existing version in SQLite or record version 1
@@ -417,36 +430,19 @@ class FlowPromptService:
         return self.load_package_from_storage(record["json_storage_key"])
 
     # -------------------------------------------------------------------------
-    # Internal Heuristic Synthesizers (Forward compatible with Task 3.12 Bible)
+    # Internal Heuristic Synthesizers (Powered by Task 3.12 Creative Services)
     # -------------------------------------------------------------------------
 
     def _resolve_channel_style(self, channel_id: str) -> VisualStyleReference:
-        """Resolve default visual aesthetic for the channel."""
-        if "dreammatter" in channel_id.lower():
-            return VisualStyleReference(
-                style_name="DreamMatter Whimsical 3D Animation",
-                style_prompt=(
-                    "Whimsical Pixar-inspired 3D animation, soft volumetric morning light, "
-                    "saturated vibrant pastel palette, highly detailed textures, gentle shadows, Octane render quality"
-                ),
-                lighting_profile="Warm golden sunlight, soft ambient fill light, subtle volumetric haze",
-                camera_profile="Cinematic child-eye level 35mm lens, gentle shallow depth of field, clear framing",
-                color_palette=["#FFD166", "#06D6A0", "#118AB2", "#EF476F", "#F8F9FA"],
-            )
-        # Default studio style
-        return VisualStyleReference(
-            style_name="Studio Standard 3D",
-            style_prompt="Cinematic 3D animation, balanced natural lighting, high dynamic range, crisp textures",
-            lighting_profile="Balanced studio lighting",
-            camera_profile="Eye-level 50mm lens",
-            color_palette=["#2B2D42", "#8D99AE", "#EDF2F4", "#EF233C"],
-        )
+        """Resolve visual aesthetic for the channel via ChannelProfileService."""
+        profile = self.channel_profile_service.get_profile(channel_id)
+        return profile.visual_style
 
     def _resolve_channel_characters(
-        self, channel_id: str, manifest: Dict[str, Any]
+        self, channel_id: str, manifest: Dict[str, Any], outfit_id: Optional[str] = None
     ) -> List[CharacterReference]:
-        """Resolve character visual anchors from manifest or channel context."""
-        chars = []
+        """Resolve character visual anchors from CharacterBibleService and manifest context."""
+        chars: List[CharacterReference] = []
         text_corpus = (
             manifest.get("title", "")
             + " "
@@ -455,21 +451,41 @@ class FlowPromptService:
             + " ".join(sc.get("narration_text", "") for sc in manifest.get("scenes", []))
         ).lower()
 
-        if "tommy" in text_corpus:
-            chars.append(
-                CharacterReference(
-                    character_id="char_tommy",
-                    name="Tommy",
-                    description="Curious and cheerful 5-year-old boy, full of wonder and friendly excitement.",
-                    visual_anchor=(
-                        "cute 5-year-old boy, unruly brown curls, big expressive brown eyes, "
-                        "bright yellow t-shirt, blue denim overalls, red canvas sneakers, rosy cheeks"
-                    ),
-                    reference_asset_storage_key="channels/ch_dreammatter_001/media_vault/originals/images/tommy_reference.jpg",
-                    voice_id="narrator_enzo_ar",
-                )
-            )
+        # Check all registered characters for this channel
+        available = self.character_bible_service.list_characters(channel_id)
+        for char_entry in available:
+            name_lower = char_entry.character_name.lower()
+            id_lower = char_entry.character_id.lower()
+            if name_lower in text_corpus or id_lower in text_corpus:
+                chars.append(char_entry.to_character_reference(outfit_id=outfit_id))
+
+        # Fallback to Tommy if none matched and channel is DreamMatter
+        if not chars and "dreammatter" in channel_id.lower():
+            tommy = self.character_bible_service.get_character("char_tommy", channel_id)
+            if tommy:
+                chars.append(tommy.to_character_reference(outfit_id=outfit_id))
+
         return chars
+
+    def _resolve_primary_character_bible_entry(
+        self, channel_id: str, manifest: Dict[str, Any]
+    ) -> Optional[Any]:
+        """Resolve primary CharacterBibleEntry for continuity directives."""
+        text_corpus = (
+            manifest.get("title", "")
+            + " "
+            + manifest.get("description", "")
+            + " "
+            + " ".join(sc.get("narration_text", "") for sc in manifest.get("scenes", []))
+        ).lower()
+
+        for char_id in ["char_tommy", "char_zara"]:
+            if char_id[5:] in text_corpus or char_id in text_corpus:
+                return self.character_bible_service.get_character(char_id, channel_id)
+
+        if "dreammatter" in channel_id.lower():
+            return self.character_bible_service.get_character("char_tommy", channel_id)
+        return None
 
     @staticmethod
     def _synthesize_scene_visual_prompt(

@@ -52,6 +52,7 @@ PORTABLE_TEST_MODULES = [
     "tests.test_task_38_batch1_fixes",
     "tests.test_task_39_storage_separation",
     "tests.test_task_311_flow_prompts",
+    "tests.test_task_312_creative_bible",
 ]
 
 PRODUCTION_TEST_MODULES = [
