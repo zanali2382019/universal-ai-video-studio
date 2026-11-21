@@ -1,0 +1,80 @@
+# ==============================================================================
+# Universal AI Video Production Studio - Git Ignore Rules (Task 3.9)
+# ==============================================================================
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Virtual environments
+venv/
+env/
+.venv/
+
+# Testing, typing, and coverage
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# Runtime Data, Databases, and Local State (Task 3.9)
+# When STUDIO_DATA_DIR is used, runtime data lives outside the repo.
+# For local development within workspace, ignore all generated runtime artifacts:
+data/
+studio_data/
+backups/
+workspace/runtime/*.db*
+workspace/runtime/*.sqlite*
+workspace/runtime/backups/
+workspace/temp/
+workspace/cache/
+workspace/logs/
+*.db
+*.db-wal
+*.db-shm
+*.db.bak*
+*.sqlite
+*.sqlite3
+
+# Channels Runtime Media & Operational Data (Task 3.9)
+# Channels directory contains heavy generated production assets, manifests, and renders
+channels/
+
+# Media and Output Files (Never commit raw/rendered binary media to source git)
+*.mp4
+*.mov
+*.webm
+*.avi
+*.mkv
+*.wav
+*.mp3
+*.aac
+*.flac
+*.m4a
+*.tmp
+*.temp
+*.log
+
+# Generated Production Reports at Root
+*_production_report.json
+first_video_production_report.json
+
+# IDE and OS
+.idea/
+.vscode/
+*.swp
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# Reusable global templates are explicitly tracked
+!global_templates/**
