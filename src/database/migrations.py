@@ -287,6 +287,59 @@ MIGRATIONS: List[Tuple[int, str, str]] = [
         CREATE INDEX IF NOT EXISTS idx_assets_storage_key ON media_assets(channel_id, storage_key);
         """,
     ),
+    (
+        5,
+        "005_task_3_11_flow_prompts",
+        """
+        -- Scene Prompts Table with explicit versioning and Google Flow generation instructions (Task 3.11)
+        CREATE TABLE IF NOT EXISTS scene_prompts (
+            id TEXT PRIMARY KEY,
+            scene_id TEXT NOT NULL,
+            channel_id TEXT NOT NULL REFERENCES channels(id) ON DELETE CASCADE,
+            project_id TEXT NOT NULL,
+            version INTEGER NOT NULL DEFAULT 1,
+            generation_mode TEXT NOT NULL DEFAULT 'text_to_video',
+            master_prompt TEXT NOT NULL DEFAULT '',
+            visual_prompt TEXT NOT NULL,
+            negative_prompt TEXT DEFAULT '',
+            camera_instructions TEXT DEFAULT '',
+            lighting_instructions TEXT DEFAULT '',
+            motion_instructions TEXT DEFAULT '',
+            continuity_instructions TEXT DEFAULT '',
+            generation_specs_json TEXT NOT NULL DEFAULT '{}',
+            character_refs_json TEXT NOT NULL DEFAULT '[]',
+            style_refs_json TEXT NOT NULL DEFAULT '[]',
+            is_active INTEGER NOT NULL DEFAULT 1,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            UNIQUE (scene_id, version)
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_scene_prompts_scene_ver ON scene_prompts(scene_id, version DESC);
+        CREATE INDEX IF NOT EXISTS idx_scene_prompts_project ON scene_prompts(project_id);
+
+        -- Flow Prompt Packages Table: Records manifest metadata & storage keys (Task 3.11)
+        CREATE TABLE IF NOT EXISTS prompt_packages (
+            id TEXT PRIMARY KEY,
+            channel_id TEXT NOT NULL REFERENCES channels(id) ON DELETE CASCADE,
+            project_id TEXT NOT NULL,
+            package_version INTEGER NOT NULL DEFAULT 1,
+            title TEXT NOT NULL,
+            flow_project_name TEXT DEFAULT '',
+            flow_workspace_ref TEXT DEFAULT '',
+            content_hash TEXT NOT NULL,
+            json_storage_key TEXT NOT NULL,
+            markdown_storage_key TEXT NOT NULL,
+            scene_count INTEGER NOT NULL DEFAULT 0,
+            metadata_json TEXT NOT NULL DEFAULT '{}',
+            created_at TEXT NOT NULL,
+            UNIQUE (project_id, package_version)
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_prompt_packages_project ON prompt_packages(project_id, package_version DESC);
+        CREATE INDEX IF NOT EXISTS idx_prompt_packages_channel ON prompt_packages(channel_id);
+        """,
+    ),
 ]
 
 

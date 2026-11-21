@@ -51,6 +51,7 @@ PORTABLE_TEST_MODULES = [
     "tests.test_audio_experience_and_language",
     "tests.test_task_38_batch1_fixes",
     "tests.test_task_39_storage_separation",
+    "tests.test_task_311_flow_prompts",
 ]
 
 PRODUCTION_TEST_MODULES = [
