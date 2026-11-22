@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+
+{% block title %}Character Bible - Universal AI Video Studio{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+        <div>
+            <h1 style="font-size: 1.75rem; font-weight: 700; margin: 0;">
+                <span class="lang-en">Character Bible (Task 3.12)</span>
+                <span class="lang-ar">مكتبة الشخصيات المرجعية (المهمة 3.12)</span>
+            </h1>
+            <p style="color: var(--text-secondary); margin-top: 0.25rem;">
+                <span class="lang-en">Official characters, immutable traits, outfit profiles, and consistency rules.</span>
+                <span class="lang-ar">الشخصيات المعتمدة، السمات الثابتة، ملفات الأزياء، وقواعد الاتساق البصري.</span>
+            </p>
+        </div>
+    </div>
+
+    <!-- Character Cards Grid -->
+    <div class="grid grid-2" style="gap: 1.5rem;">
+        {% for char in characters %}
+        <div class="card" style="background: var(--bg-surface); border: 1px solid var(--border-color); display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
+                    <div>
+                        <h2 style="font-size: 1.35rem; font-weight: 700; margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+                            {{ char.character_name }}
+                            <span class="badge badge-info">{{ char.character_id }}</span>
+                        </h2>
+                        <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.25rem;">
+                            Recurring Franchise Character
+                        </div>
+                    </div>
+                    <div>
+                        {% if char.missing_fields %}
+                        <span class="badge badge-warning" title="Awaiting Owner Inputs">
+                            PENDING_OWNER_INPUT ({{ char.missing_fields|length }})
+                        </span>
+                        {% else %}
+                        <span class="badge badge-success">Fully Defined</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <p style="color: var(--text-primary); font-size: 0.95rem; line-height: 1.5; margin-bottom: 1rem;">
+                    {{ char.identity_description }}
+                </p>
+
+                <!-- Key Attributes -->
+                <div style="background: var(--bg-main); border-radius: var(--radius-sm); padding: 0.75rem; margin-bottom: 1rem; font-size: 0.85rem;">
+                    <div style="margin-bottom: 0.35rem;">
+                        <strong><span class="lang-en">Hair & Face:</span><span class="lang-ar">الشعر والوجه:</span></strong>
+                        <span style="color: var(--text-secondary);">{{ char.hair_and_face_description }}</span>
+                    </div>
+                    <div style="margin-bottom: 0.35rem;">
+                        <strong><span class="lang-en">Movement:</span><span class="lang-ar">الحركة:</span></strong>
+                        <span style="color: var(--text-secondary);">{{ char.movement_characteristics }}</span>
+                    </div>
+                    <div>
+                        <strong><span class="lang-en">Outfits:</span><span class="lang-ar">الأزياء:</span></strong>
+                        <span class="badge badge-info">{{ char.outfit_profiles.values()|list|length }} registered</span>
+                    </div>
+                </div>
+
+                {% if char.missing_fields %}
+                <div style="margin-bottom: 1rem;">
+                    <div style="font-size: 0.8rem; font-weight: 600; color: #f59e0b; margin-bottom: 0.25rem;">
+                        <span class="lang-en">Pending Owner Details:</span>
+                        <span class="lang-ar">تفاصيل بانتظار إدخال المالك:</span>
+                    </div>
+                    <div style="display: flex; gap: 0.35rem; flex-wrap: wrap;">
+                        {% for fld in char.missing_fields %}
+                        <span class="badge badge-warning" style="font-size: 0.75rem;">{{ fld }}</span>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+
+            <div style="border-top: 1px solid var(--border-color); padding-top: 1rem; margin-top: 1rem; display: flex; justify-content: flex-end;">
+                <a href="/characters/{{ char.character_id }}" class="btn btn-secondary">
+                    <span class="lang-en">View Bible Details &rarr;</span>
+                    <span class="lang-ar">عرض تفاصيل الدليل &larr;</span>
+                </a>
+            </div>
+        </div>
+        {% else %}
+        <div style="text-align: center; color: var(--text-muted); padding: 3rem; grid-column: span 2;">
+            <span class="lang-en">No characters registered in Character Bible.</span>
+            <span class="lang-ar">لا توجد شخصيات مسجلة في مكتبة الشخصيات.</span>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

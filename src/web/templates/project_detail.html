@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+
+{% block title %}{{ project.title or project.name }} - Universal AI Video Studio{% endblock %}
+
+{% block content %}
+{% set p_id = project.id or project.project_id %}
+<div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+        <div>
+            <div style="display: flex; align-items: center; gap: 0.75rem;">
+                <h1 style="font-size: 1.75rem; font-weight: 700; margin: 0;">{{ project.title or project.name }}</h1>
+                <span class="badge badge-info">{{ p_id }}</span>
+                <span class="badge badge-success">{{ project.status }}</span>
+            </div>
+            <p style="color: var(--text-secondary); margin-top: 0.25rem;">
+                {{ project.description or 'No project description provided.' }}
+            </p>
+        </div>
+        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+            <a href="/storyboard/{{ project.channel_id }}/{{ p_id }}" class="btn btn-primary">
+                <span class="lang-en">&#9658; Open Storyboard</span>
+                <span class="lang-ar">&#9658; فتح لوحة القصة</span>
+            </a>
+            <a href="/flow/outbound/{{ project.channel_id }}/{{ p_id }}" class="btn btn-secondary">
+                <span class="lang-en">Flow Outbound</span>
+                <span class="lang-ar">توليد نصوص Flow</span>
+            </a>
+            <a href="/flow/inbound/{{ project.channel_id }}/{{ p_id }}" class="btn btn-secondary">
+                <span class="lang-en">Flow Inbound</span>
+                <span class="lang-ar">استيراد نواتج Flow</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Metrics Grid -->
+    <div class="grid grid-4" style="margin-bottom: 1.5rem;">
+        <div class="metric-card">
+            <div class="metric-value">{{ project.aspect_ratio or project.target_aspect_ratio }}</div>
+            <div class="metric-label">
+                <span class="lang-en">Aspect Ratio</span>
+                <span class="lang-ar">نسبة الأبعاد</span>
+            </div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-value">{{ scenes|length }}</div>
+            <div class="metric-label">
+                <span class="lang-en">Total Scenes</span>
+                <span class="lang-ar">إجمالي المشاهد</span>
+            </div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-value">{{ flow_status.get('scenes_with_active_take', 0) }} / {{ scenes|length }}</div>
+            <div class="metric-label">
+                <span class="lang-en">Active Takes</span>
+                <span class="lang-ar">المشاهد الجاهزة</span>
+            </div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-value">{{ "%.1f"|format(flow_status.get('completion_percentage', 0.0)) }}%</div>
+            <div class="metric-label">
+                <span class="lang-en">Flow Completion</span>
+                <span class="lang-ar">نسبة اكتمال Flow</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scenes Table -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <h2 style="font-size: 1.25rem; font-weight: 600; margin: 0;">
+            <span class="lang-en">Scenes</span>
+            <span class="lang-ar">مشاهد المشروع</span>
+        </h2>
+        <a href="/storyboard/{{ project.channel_id }}/{{ p_id }}" class="btn btn-secondary btn-sm">
+            <span class="lang-en">Manage in Storyboard</span>
+            <span class="lang-ar">إدارة في لوحة القصة</span>
+        </a>
+    </div>
+
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 60px;"><span class="lang-en">#</span><span class="lang-ar">#</span></th>
+                    <th><span class="lang-en">Scene ID</span><span class="lang-ar">معرف المشهد</span></th>
+                    <th><span class="lang-en">Narration / Script</span><span class="lang-ar">النص الصوتي</span></th>
+                    <th><span class="lang-en">Duration</span><span class="lang-ar">المدة</span></th>
+                    <th><span class="lang-en">Active Take</span><span class="lang-ar">اللقطة النشطة</span></th>
+                    <th><span class="lang-en">Actions</span><span class="lang-ar">الإجراءات</span></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for sc in scenes %}
+                {% set sc_id = sc.id or sc.scene_id %}
+                <tr>
+                    <td style="font-weight: 700; color: var(--accent-color);">{{ sc.sequence_number or sc.scene_index }}</td>
+                    <td><code>{{ sc_id }}</code></td>
+                    <td style="max-width: 350px;">
+                        <div style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                            {{ sc.narration_text or sc.script_text or '<span style="color:var(--text-muted);">(No script)</span>'|safe }}
+                        </div>
+                    </td>
+                    <td>{{ sc.duration_seconds or sc.target_duration_sec }}s</td>
+                    <td>
+                        {% if sc.active_take_id or active_takes.get(sc_id) %}
+                        <span class="badge badge-success">
+                            <span class="lang-en">Ready</span>
+                            <span class="lang-ar">جاهز</span>
+                        </span>
+                        {% else %}
+                        <span class="badge badge-warning">
+                            <span class="lang-en">Missing Take</span>
+                            <span class="lang-ar">بانتظار لقطة</span>
+                        </span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <a href="/scenes/{{ project.channel_id }}/{{ p_id }}/{{ sc_id }}" class="btn btn-secondary btn-sm">
+                            <span class="lang-en">Edit Prompt</span>
+                            <span class="lang-ar">تعديل البرومبت</span>
+                        </a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 2rem;">
+                        <span class="lang-en">No scenes found in this project.</span>
+                        <span class="lang-ar">لا توجد مشاهد في هذا المشروع.</span>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

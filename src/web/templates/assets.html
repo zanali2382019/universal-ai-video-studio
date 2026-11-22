@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+
+{% block title %}Asset Browser - Universal AI Video Studio{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+        <div>
+            <h1 style="font-size: 1.75rem; font-weight: 700; margin: 0;">
+                <span class="lang-en">Media Asset Management (MAM)</span>
+                <span class="lang-ar">إدارة أصول الوسائط الرقمية (MAM)</span>
+            </h1>
+            <p style="color: var(--text-secondary); margin-top: 0.25rem;">
+                <span class="lang-en">Browse managed assets across channels, inspect SHA-256 checksums, and verify commercial rights.</span>
+                <span class="lang-ar">تصفح الأصول الرقمية، والتحقق من بصمات SHA-256 وسلامة التراخيص التجارية.</span>
+            </p>
+        </div>
+        <div>
+            <!-- Filter by channel -->
+            <form method="GET" action="/assets" style="display: flex; gap: 0.5rem; align-items: center; margin: 0;">
+                <select name="channel_id" class="form-control" onchange="this.form.submit()" style="padding: 0.4rem 0.75rem;">
+                    <option value="">-- All Channels --</option>
+                    {% for ch in channels %}
+                    <option value="{{ ch.id }}" {% if selected_channel_id == ch.id %}selected{% endif %}>{{ ch.name }}</option>
+                    {% endfor %}
+                </select>
+                <select name="asset_type" class="form-control" onchange="this.form.submit()" style="padding: 0.4rem 0.75rem;">
+                    <option value="">-- All Types --</option>
+                    <option value="video" {% if selected_type == 'video' %}selected{% endif %}>Video</option>
+                    <option value="audio" {% if selected_type == 'audio' %}selected{% endif %}>Audio</option>
+                    <option value="image" {% if selected_type == 'image' %}selected{% endif %}>Image</option>
+                    <option value="subtitle" {% if selected_type == 'subtitle' %}selected{% endif %}>Subtitle</option>
+                </select>
+            </form>
+        </div>
+    </div>
+
+    <!-- Assets Table -->
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th><span class="lang-en">Asset Title / ID</span><span class="lang-ar">اسم الأصل / المعرف</span></th>
+                    <th><span class="lang-en">Type</span><span class="lang-ar">النوع</span></th>
+                    <th><span class="lang-en">Channel / Project</span><span class="lang-ar">القناة / المشروع</span></th>
+                    <th><span class="lang-en">Size & Format</span><span class="lang-ar">الحجم والصيغة</span></th>
+                    <th><span class="lang-en">SHA-256 Fingerprint</span><span class="lang-ar">بصمة SHA-256</span></th>
+                    <th><span class="lang-en">Commercial Rights</span><span class="lang-ar">الحقوق التجارية</span></th>
+                    <th><span class="lang-en">Actions</span><span class="lang-ar">الإجراءات</span></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for asset in assets %}
+                <tr>
+                    <td>
+                        <div style="font-weight: 600;">{{ asset.file_name or asset.id }}</div>
+                        <div style="font-size: 0.8rem; color: var(--text-muted); font-family: monospace;">{{ asset.id }}</div>
+                    </td>
+                    <td>
+                        <span class="badge badge-info">{{ asset.asset_type.value if asset.asset_type.value is defined else asset.asset_type }}</span>
+                    </td>
+                    <td>
+                        <div><span class="badge badge-secondary">{{ asset.channel_id }}</span></div>
+                        {% if asset.project_id %}
+                        <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.2rem;">{{ asset.project_id }}</div>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div>{{ (asset.file_size_bytes / 1024 / 1024)|round(2) if asset.file_size_bytes else 0 }} MB</div>
+                        <div style="font-size: 0.8rem; color: var(--text-muted);">{{ asset.mime_type or '-' }}</div>
+                    </td>
+                    <td>
+                        <code style="font-size: 0.75rem;" title="{{ asset.file_sha256 }}">
+                            {{ asset.file_sha256[:12] if asset.file_sha256 else '-' }}...{{ asset.file_sha256[-8:] if asset.file_sha256 else '' }}
+                        </code>
+                    </td>
+                    <td>
+                        {% if asset.license_reference %}
+                        <span class="badge badge-success">{{ asset.license_reference }}</span>
+                        {% else %}
+                        <span class="badge badge-info">Internal / Unspecified</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <a href="/assets/{{ asset.channel_id }}/{{ asset.id }}/file" target="_blank" class="btn btn-secondary btn-sm">
+                            <span class="lang-en">Open File</span>
+                            <span class="lang-ar">فتح الملف</span>
+                        </a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 2rem;">
+                        <span class="lang-en">No media assets found matching the criteria.</span>
+                        <span class="lang-ar">لا توجد أصول وسائط مطابقة لمعايير البحث.</span>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

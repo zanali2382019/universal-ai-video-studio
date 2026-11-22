@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% block title %}إدارة القنوات | Universal AI Studio{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">إدارة القنوات (Channel Management)</h1>
+    <p class="page-subtitle">عزل منطقي ومساحات عمل مستقلة لكل قناة إبداعية</p>
+  </div>
+  <button type="button" class="btn btn-primary" onclick="document.getElementById('new-channel-card').style.display='block'">
+    + إنشاء قناة جديدة
+  </button>
+</div>
+
+<!-- New Channel Form (Collapsible) -->
+<div id="new-channel-card" class="card" style="display: none; margin-bottom: 1.5rem; border-color: var(--accent-primary);">
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+    <h3 style="font-weight: 700;">إنشاء قناة جديدة</h3>
+    <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('new-channel-card').style.display='none'">✕ إغلاق</button>
+  </div>
+  <form action="/channels/create" method="POST">
+    <div class="grid grid-cols-2">
+      <div class="form-group">
+        <label for="id">معرف القناة (Channel ID - أحرف لاتينية وأرقام فقط):</label>
+        <input type="text" id="id" name="id" placeholder="e.g. ch_dreammatter_002" required pattern="^[a-zA-Z0-9_\-]+$">
+      </div>
+      <div class="form-group">
+        <label for="name">اسم القناة:</label>
+        <input type="text" id="name" name="name" placeholder="e.g. WonderCraft Kids" required>
+      </div>
+      <div class="form-group">
+        <label for="handle">المعرف / المقبض (@Handle):</label>
+        <input type="text" id="handle" name="handle" placeholder="e.g. @WonderCraftWorld" required>
+      </div>
+      <div class="form-group">
+        <label for="niche">المجال / التخصص (Niche):</label>
+        <input type="text" id="niche" name="niche" placeholder="e.g. 3D Animation, Children Bedtime" required>
+      </div>
+    </div>
+    <div style="display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 1rem;">
+      <button type="button" class="btn btn-secondary" onclick="document.getElementById('new-channel-card').style.display='none'">إلغاء</button>
+      <button type="submit" class="btn btn-primary">تأكيد وإنشاء القناة</button>
+    </div>
+  </form>
+</div>
+
+<!-- Channel Cards Grid -->
+<div class="grid grid-cols-3">
+  {% for ch in channels %}
+  <div class="card" style="display: flex; flex-direction: column; justify-content: space-between;">
+    <div>
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.75rem;">
+        <div>
+          <h2 style="font-size: 1.25rem; font-weight: 700;">{{ ch.name }}</h2>
+          <span style="color: var(--accent-cyan); font-size: 0.85rem; font-weight: 600;">{{ ch.handle }}</span>
+        </div>
+        <span class="badge badge-emerald">نشطة (Active)</span>
+      </div>
+
+      <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1rem;">
+        <p><strong>المجال:</strong> {{ ch.niche }}</p>
+        <p><strong>المعرف:</strong> <code>{{ ch.id }}</code></p>
+      </div>
+    </div>
+
+    <div style="display: flex; gap: 0.5rem; border-top: 1px solid var(--border-color); padding-top: 0.75rem;">
+      <a href="/channels/{{ ch.id }}" class="btn btn-secondary btn-sm" style="flex: 1;">الملف الإبداعي &larr;</a>
+      <a href="/projects?channel_id={{ ch.id }}" class="btn btn-primary btn-sm" style="flex: 1;">مشاريع القناة</a>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

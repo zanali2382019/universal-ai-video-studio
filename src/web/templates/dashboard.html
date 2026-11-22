@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Universal AI Video Studio{% endblock %}
+
+{% block content %}
+<div class="card" style="margin-bottom: 1.5rem;">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+        <div>
+            <h1 style="font-size: 1.75rem; font-weight: 700; margin: 0;">
+                <span class="lang-en">Studio Dashboard</span>
+                <span class="lang-ar">لوحة التحكم الرئيسية</span>
+            </h1>
+            <p style="color: var(--text-secondary); margin-top: 0.25rem;">
+                <span class="lang-en">Overview of production channels, projects, and Google Flow generation progress.</span>
+                <span class="lang-ar">نظرة عامة على القنوات، ومشاريع الإنتاج، ونسب إنجاز لقطات Google Flow.</span>
+            </p>
+        </div>
+        <div style="display: flex; gap: 0.5rem;">
+            <a href="/projects" class="btn btn-primary">
+                <span class="lang-en">+ New Project</span>
+                <span class="lang-ar">+ مشروع جديد</span>
+            </a>
+            <a href="/channels" class="btn btn-secondary">
+                <span class="lang-en">Manage Channels</span>
+                <span class="lang-ar">إدارة القنوات</span>
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Key Metrics Grid -->
+<div class="grid grid-4" style="margin-bottom: 1.5rem;">
+    <div class="metric-card">
+        <div class="metric-value">{{ stats.channel_count }}</div>
+        <div class="metric-label">
+            <span class="lang-en">Total Channels</span>
+            <span class="lang-ar">إجمالي القنوات</span>
+        </div>
+    </div>
+    <div class="metric-card">
+        <div class="metric-value">{{ stats.project_count }}</div>
+        <div class="metric-label">
+            <span class="lang-en">Total Projects</span>
+            <span class="lang-ar">المشاريع والحلقات</span>
+        </div>
+    </div>
+    <div class="metric-card">
+        <div class="metric-value">{{ stats.scene_count }}</div>
+        <div class="metric-label">
+            <span class="lang-en">Total Scenes</span>
+            <span class="lang-ar">إجمالي المشاهد</span>
+        </div>
+    </div>
+    <div class="metric-card">
+        <div class="metric-value" style="color: #10b981;">{{ stats.active_takes_count }}</div>
+        <div class="metric-label">
+            <span class="lang-en">Active Flow Takes</span>
+            <span class="lang-ar">اللقطات النشطة (Flow)</span>
+        </div>
+    </div>
+</div>
+
+<!-- Projects Flow Progress Table -->
+<div class="card" style="margin-bottom: 1.5rem;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <h2 style="font-size: 1.25rem; font-weight: 600; margin: 0;">
+            <span class="lang-en">Google Flow Integration Progress (ADR-012)</span>
+            <span class="lang-ar">مشاريع وحالة تكامل Google Flow (ADR-012)</span>
+        </h2>
+        <span class="badge badge-info">Google Flow First Policy</span>
+    </div>
+
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th><span class="lang-en">Project Name</span><span class="lang-ar">اسم المشروع</span></th>
+                    <th><span class="lang-en">Channel</span><span class="lang-ar">القناة</span></th>
+                    <th><span class="lang-en">Aspect Ratio</span><span class="lang-ar">الأبعاد</span></th>
+                    <th><span class="lang-en">Scenes</span><span class="lang-ar">المشاهد</span></th>
+                    <th><span class="lang-en">Flow Readiness</span><span class="lang-ar">جاهزية لقطات Flow</span></th>
+                    <th><span class="lang-en">Quick Actions</span><span class="lang-ar">إجراءات سريعة</span></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in project_flow_stats %}
+                <tr>
+                    <td style="font-weight: 600;">
+                        <a href="/projects/{{ p.channel_id }}/{{ p.project_id }}" style="color: var(--accent-color); text-decoration: none;">
+                            {{ p.project_name }}
+                        </a>
+                    </td>
+                    <td><span class="badge badge-secondary">{{ p.channel_name }}</span></td>
+                    <td><span class="badge badge-info">{{ p.aspect_ratio }}</span></td>
+                    <td>{{ p.scene_count }}</td>
+                    <td>
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <div style="flex-grow: 1; height: 6px; background: var(--bg-hover); border-radius: 3px; overflow: hidden; min-width: 60px;">
+                                <div style="width: {{ p.completion_percentage }}%; height: 100%; background: var(--accent-color);"></div>
+                            </div>
+                            <span style="font-size: 0.85rem; font-weight: 600;">{{ "%.0f"|format(p.completion_percentage) }}%</span>
+                        </div>
+                    </td>
+                    <td>
+                        <div style="display: flex; gap: 0.35rem;">
+                            <a href="/storyboard/{{ p.channel_id }}/{{ p.project_id }}" class="btn btn-primary btn-sm">
+                                <span class="lang-en">Storyboard</span>
+                                <span class="lang-ar">اللوحة</span>
+                            </a>
+                            <a href="/flow/outbound/{{ p.channel_id }}/{{ p.project_id }}" class="btn btn-secondary btn-sm">
+                                <span class="lang-en">Outbound</span>
+                                <span class="lang-ar">المخرجات</span>
+                            </a>
+                            <a href="/flow/inbound/{{ p.channel_id }}/{{ p.project_id }}" class="btn btn-secondary btn-sm">
+                                <span class="lang-en">Inbound</span>
+                                <span class="lang-ar">المدخلات</span>
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 2rem;">
+                        <span class="lang-en">No projects registered yet. Click "+ New Project" to get started.</span>
+                        <span class="lang-ar">لا توجد مشاريع مسجلة حالياً. انقر على "+ مشروع جديد" للبدء.</span>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Workflow Links Grid -->
+<div class="grid grid-3" style="gap: 1.25rem;">
+    <div class="card" style="background: var(--bg-surface); border: 1px solid var(--border-color);">
+        <div style="font-size: 1.5rem; margin-bottom: 0.5rem;">&#128100;</div>
+        <h3 style="font-size: 1.1rem; font-weight: 600; margin-bottom: 0.35rem;">
+            <span class="lang-en">Character Bible (Task 3.12)</span>
+            <span class="lang-ar">مكتبة الشخصيات المرجعية</span>
+        </h3>
+        <p style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 1rem;">
+            <span class="lang-en">Browse official character profiles (Tommy, Zara), outfits, and visual consistency rules.</span>
+            <span class="lang-ar">تصفح ملفات الشخصيات المعتمدة، أزياءهم، والسمات الثابتة دون اختراع بيانات.</span>
+        </p>
+        <a href="/characters" class="btn btn-secondary btn-sm">
+            <span class="lang-en">Browse Characters &rarr;</span>
+            <span class="lang-ar">عرض مكتبة الشخصيات &larr;</span>
+        </a>
+    </div>
+
+    <div class="card" style="background: var(--bg-surface); border: 1px solid var(--border-color);">
+        <div style="font-size: 1.5rem; margin-bottom: 0.5rem;">&#128193;</div>
+        <h3 style="font-size: 1.1rem; font-weight: 600; margin-bottom: 0.35rem;">
+            <span class="lang-en">Media Asset Management (MAM)</span>
+            <span class="lang-ar">مكتبة الأصول والتراخيص (MAM)</span>
+        </h3>
+        <p style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 1rem;">
+            <span class="lang-en">Inspect images, video takes, SHA-256 integrity hashes, and commercial license status.</span>
+            <span class="lang-ar">استعراض الصور والفيديوهات مع فحص التراخيص والـ SHA-256 وحالة التصدير التجاري.</span>
+        </p>
+        <a href="/assets" class="btn btn-secondary btn-sm">
+            <span class="lang-en">Browse Media Assets &rarr;</span>
+            <span class="lang-ar">تصفح الأصول الرقمية &larr;</span>
+        </a>
+    </div>
+
+    <div class="card" style="background: var(--bg-surface); border: 1px solid var(--border-color);">
+        <div style="font-size: 1.5rem; margin-bottom: 0.5rem;">&#128250;</div>
+        <h3 style="font-size: 1.1rem; font-weight: 600; margin-bottom: 0.35rem;">
+            <span class="lang-en">Channel Profiles</span>
+            <span class="lang-ar">الملفات الإبداعية للقنوات</span>
+        </h3>
+        <p style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 1rem;">
+            <span class="lang-en">Manage brand identity, visual style, color palettes, and production preferences per channel.</span>
+            <span class="lang-ar">تخصيص الهوية البصرية، لوحة الألوان، وقواعد العلامة التجارية لكل قناة.</span>
+        </p>
+        <a href="/channels" class="btn btn-secondary btn-sm">
+            <span class="lang-en">Manage Channels &rarr;</span>
+            <span class="lang-ar">إدارة القنوات &larr;</span>
+        </a>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Universal AI Video Studio{% endblock %}</title>
+  <link rel="stylesheet" href="/static/css/studio.css">
+</head>
+<body>
+  <!-- Header & Navigation -->
+  <header class="app-header">
+    <a href="/dashboard" class="brand-section">
+      <div class="brand-logo">AG</div>
+      <div>
+        <span class="brand-title">Universal AI Studio</span>
+        <span class="brand-badge">Local WebUI</span>
+      </div>
+    </a>
+
+    <nav class="main-nav">
+      <a href="/dashboard" class="nav-link {% if active_page == 'dashboard' %}active{% endif %}">
+        <span>📊</span> <span>لوحة التحكم</span>
+      </a>
+      <a href="/channels" class="nav-link {% if active_page == 'channels' %}active{% endif %}">
+        <span>📺</span> <span>القنوات</span>
+      </a>
+      <a href="/projects" class="nav-link {% if active_page == 'projects' %}active{% endif %}">
+        <span>🎬</span> <span>المشاريع</span>
+      </a>
+      <a href="/characters" class="nav-link {% if active_page == 'characters' %}active{% endif %}">
+        <span>👤</span> <span>الشخصيات</span>
+      </a>
+      <a href="/assets" class="nav-link {% if active_page == 'assets' %}active{% endif %}">
+        <span>📁</span> <span>مكتبة الأصول (MAM)</span>
+      </a>
+    </nav>
+
+    <div class="header-controls">
+      <button type="button" class="btn btn-secondary btn-sm" id="lang-toggle-btn" onclick="toggleLanguage()">
+        English
+      </button>
+      <button type="button" class="btn btn-secondary btn-sm" onclick="toggleTheme()" title="Toggle Dark/Light Mode">
+        🌓
+      </button>
+    </div>
+  </header>
+
+  <!-- Flash / Session Messages -->
+  <main class="main-content">
+    {% if alert_success %}
+    <div class="alert alert-success">
+      <span>✓</span> <span>{{ alert_success }}</span>
+    </div>
+    {% endif %}
+
+    {% if alert_error %}
+    <div class="alert alert-danger">
+      <span>⚠</span> <span>{{ alert_error }}</span>
+    </div>
+    {% endif %}
+
+    {% if alert_warning %}
+    <div class="alert alert-warning">
+      <span>ℹ</span> <span>{{ alert_warning }}</span>
+    </div>
+    {% endif %}
+
+    {% block content %}{% endblock %}
+  </main>
+
+  <div id="toast-container"></div>
+  <script src="/static/js/studio.js"></script>
+</body>
+</html>

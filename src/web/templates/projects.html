@@ -1,0 +1,174 @@
+{% extends "base.html" %}
+
+{% block title %}Projects - Universal AI Video Studio{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+        <div>
+            <h1 style="font-size: 1.75rem; font-weight: 700; margin: 0;">
+                <span class="lang-en">Projects & Episodes</span>
+                <span class="lang-ar">المشاريع والحلقات</span>
+            </h1>
+            <p style="color: var(--text-secondary); margin-top: 0.25rem;">
+                <span class="lang-en">Manage video projects, episodes, and storyboards across all channels.</span>
+                <span class="lang-ar">إدارة مشاريع الفيديو والحلقات ولوحات القصة عبر جميع القنوات.</span>
+            </p>
+        </div>
+        <div style="display: flex; gap: 0.75rem; align-items: center;">
+            <!-- Channel Filter -->
+            <form method="GET" action="/projects" style="display: flex; align-items: center; gap: 0.5rem; margin: 0;">
+                <select name="channel_id" class="form-control" onchange="this.form.submit()" style="padding: 0.4rem 0.75rem;">
+                    <option value="">-- All Channels --</option>
+                    {% for ch in channels %}
+                    {% set ch_id = ch.id or ch.channel_id %}
+                    <option value="{{ ch_id }}" {% if selected_channel_id == ch_id %}selected{% endif %}>{{ ch.name }}</option>
+                    {% endfor %}
+                </select>
+            </form>
+            <button class="btn btn-primary" onclick="openModal('createProjectModal')">
+                <span class="lang-en">+ New Project</span>
+                <span class="lang-ar">+ مشروع جديد</span>
+            </button>
+        </div>
+    </div>
+
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th><span class="lang-en">Project Name</span><span class="lang-ar">اسم المشروع</span></th>
+                    <th><span class="lang-en">Channel</span><span class="lang-ar">القناة</span></th>
+                    <th><span class="lang-en">Aspect Ratio</span><span class="lang-ar">نسبة الأبعاد</span></th>
+                    <th><span class="lang-en">Scenes</span><span class="lang-ar">المشاهد</span></th>
+                    <th><span class="lang-en">Status</span><span class="lang-ar">الحالة</span></th>
+                    <th><span class="lang-en">Created</span><span class="lang-ar">تاريخ الإنشاء</span></th>
+                    <th><span class="lang-en">Actions</span><span class="lang-ar">الإجراءات</span></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for proj in projects %}
+                {% set p_id = proj.id or proj.project_id %}
+                <tr>
+                    <td style="font-weight: 600;">
+                        <a href="/projects/{{ proj.channel_id }}/{{ p_id }}" style="color: var(--accent-color); text-decoration: none;">
+                            {{ proj.title or proj.name }}
+                        </a>
+                        {% if proj.description %}
+                        <div style="font-size: 0.8rem; color: var(--text-muted); font-weight: normal;">{{ proj.description }}</div>
+                        {% endif %}
+                    </td>
+                    <td><span class="badge badge-info">{{ proj.channel_id }}</span></td>
+                    <td><span class="badge badge-warning">{{ proj.aspect_ratio or proj.target_aspect_ratio }}</span></td>
+                    <td>
+                        <span class="badge badge-info">{{ scene_counts.get(p_id, 0) }}</span>
+                    </td>
+                    <td><span class="badge badge-success">{{ proj.status }}</span></td>
+                    <td style="color: var(--text-muted); font-size: 0.85rem;">{{ proj.created_at[:10] if proj.created_at else '-' }}</td>
+                    <td>
+                        <div style="display: flex; gap: 0.35rem;">
+                            <a href="/projects/{{ proj.channel_id }}/{{ p_id }}" class="btn btn-secondary btn-sm" title="Project Details">
+                                <span class="lang-en">Details</span>
+                                <span class="lang-ar">التفاصيل</span>
+                            </a>
+                            <a href="/storyboard/{{ proj.channel_id }}/{{ p_id }}" class="btn btn-primary btn-sm" title="Storyboard">
+                                <span class="lang-en">Storyboard</span>
+                                <span class="lang-ar">اللوحة</span>
+                            </a>
+                            <a href="/flow/outbound/{{ proj.channel_id }}/{{ p_id }}" class="btn btn-secondary btn-sm" title="Flow Outbound">
+                                <span class="lang-en">Outbound</span>
+                                <span class="lang-ar">المخرجات</span>
+                            </a>
+                            <a href="/flow/inbound/{{ proj.channel_id }}/{{ p_id }}" class="btn btn-secondary btn-sm" title="Flow Inbound">
+                                <span class="lang-en">Inbound</span>
+                                <span class="lang-ar">المدخلات</span>
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 2rem;">
+                        <span class="lang-en">No projects found. Click "+ New Project" to create one.</span>
+                        <span class="lang-ar">لا توجد مشاريع. انقر على "+ مشروع جديد" لإنشاء مشروع.</span>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal: Create Project -->
+<div class="modal-backdrop" id="createProjectModal">
+    <div class="modal">
+        <div class="modal-header">
+            <h3 class="modal-title">
+                <span class="lang-en">Create New Project</span>
+                <span class="lang-ar">إنشاء مشروع جديد</span>
+            </h3>
+            <button class="modal-close" onclick="closeModal('createProjectModal')">&times;</button>
+        </div>
+        <form method="POST" action="/projects/create">
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="channel_id">
+                        <span class="lang-en">Channel</span>
+                        <span class="lang-ar">القناة</span>
+                    </label>
+                    <select id="channel_id" name="channel_id" class="form-control" required>
+                        {% for ch in channels %}
+                        {% set ch_id = ch.id or ch.channel_id %}
+                        <option value="{{ ch_id }}" {% if selected_channel_id == ch_id %}selected{% endif %}>{{ ch.name }} ({{ ch_id }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="name">
+                        <span class="lang-en">Project Name</span>
+                        <span class="lang-ar">اسم المشروع</span>
+                    </label>
+                    <input type="text" id="name" name="name" class="form-control" placeholder="e.g. Episode 04 - The Crystal Cave" required>
+                </div>
+                <div class="grid grid-2">
+                    <div class="form-group">
+                        <label for="target_aspect_ratio">
+                            <span class="lang-en">Aspect Ratio</span>
+                            <span class="lang-ar">نسبة الأبعاد</span>
+                        </label>
+                        <select id="target_aspect_ratio" name="target_aspect_ratio" class="form-control">
+                            <option value="9:16">9:16 (Shorts/Reels)</option>
+                            <option value="16:9">16:9 (Landscape)</option>
+                            <option value="1:1">1:1 (Square)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="target_duration">
+                            <span class="lang-en">Target Duration (sec)</span>
+                            <span class="lang-ar">المدة المستهدفة (ثوانٍ)</span>
+                        </label>
+                        <input type="number" step="0.5" id="target_duration" name="target_duration" class="form-control" value="15.0">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="description">
+                        <span class="lang-en">Description</span>
+                        <span class="lang-ar">الوصف</span>
+                    </label>
+                    <textarea id="description" name="description" rows="3" class="form-control" placeholder="Brief synopsis or episode plot..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('createProjectModal')">
+                    <span class="lang-en">Cancel</span>
+                    <span class="lang-ar">إلغاء</span>
+                </button>
+                <button type="submit" class="btn btn-primary">
+                    <span class="lang-en">Create Project</span>
+                    <span class="lang-ar">إنشاء المشروع</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

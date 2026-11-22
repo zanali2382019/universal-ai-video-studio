@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+
+{% set p_id = project.id or project.project_id %}
+
+{% block title %}Flow Outbound - {{ project.title or project.name }} - Universal AI Video Studio{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+        <div>
+            <div style="display: flex; align-items: center; gap: 0.75rem;">
+                <h1 style="font-size: 1.75rem; font-weight: 700; margin: 0;">
+                    <span class="lang-en">Google Flow Outbound Package</span>
+                    <span class="lang-ar">حزمة تصدير Google Flow (Outbound)</span>
+                </h1>
+                <span class="badge badge-info">{{ project.title or project.name }}</span>
+            </div>
+            <p style="color: var(--text-secondary); margin-top: 0.25rem;">
+                <span class="lang-en">Generate, inspect, and copy optimized prompts for Google Flow batch generation.</span>
+                <span class="lang-ar">توليد وفحص ونسخ نصوص التوليد المحسنة لـ Google Flow بنقرة زر واحدة.</span>
+            </p>
+        </div>
+        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+            <a href="/projects/{{ project.channel_id }}/{{ p_id }}" class="btn btn-secondary">
+                <span class="lang-en">&larr; Back to Project</span>
+                <span class="lang-ar">&rarr; العودة للمشروع</span>
+            </a>
+            <form method="POST" action="/flow/outbound/{{ project.channel_id }}/{{ p_id }}/generate" style="margin: 0;">
+                <button type="submit" class="btn btn-primary">
+                    <span class="lang-en">&#8635; Regenerate Package</span>
+                    <span class="lang-ar">&#8635; إعادة توليد الحزمة</span>
+                </button>
+            </form>
+            <a href="/flow/outbound/{{ project.channel_id }}/{{ p_id }}/export/json" class="btn btn-secondary" download>
+                <span class="lang-en">&#128190; Export JSON</span>
+                <span class="lang-ar">&#128190; تصدير JSON</span>
+            </a>
+            <a href="/flow/outbound/{{ project.channel_id }}/{{ p_id }}/export/markdown" class="btn btn-secondary" download>
+                <span class="lang-en">&#128196; Export Markdown</span>
+                <span class="lang-ar">&#128196; تصدير Markdown</span>
+            </a>
+        </div>
+    </div>
+
+    {% if package %}
+    <!-- Master Prompt & Channel Visual Style -->
+    <div class="card" style="background: var(--bg-surface); border: 1px solid var(--border-color); padding: 1.25rem; margin-bottom: 1.5rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+            <h2 style="font-size: 1.15rem; font-weight: 600; margin: 0;">
+                <span class="lang-en">Master Style Prompt</span>
+                <span class="lang-ar">النمط البصري الرئيسي (Master Prompt)</span>
+            </h2>
+            <button class="btn btn-secondary btn-sm" onclick="copyToClipboard('{{ package.master_prompt | replace('\n', ' ') | escape }}', 'Master Prompt copied to clipboard!')">
+                <span class="lang-en">&#128203; Copy Master Prompt</span>
+                <span class="lang-ar">&#128203; نسخ النمط الرئيسي</span>
+            </button>
+        </div>
+        <div style="background: var(--bg-main); padding: 1rem; border-radius: var(--radius-sm); font-family: monospace; font-size: 0.9rem; line-height: 1.5; color: var(--text-primary);">
+            {{ package.master_prompt }}
+        </div>
+    </div>
+
+    <!-- Scene Prompts List -->
+    {% set scenes_list = package.scene_specs or package.scenes or [] %}
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <h2 style="font-size: 1.25rem; font-weight: 600; margin: 0;">
+            <span class="lang-en">Scene Prompts ({{ scenes_list|length }})</span>
+            <span class="lang-ar">نصوص توليد المشاهد ({{ scenes_list|length }})</span>
+        </h2>
+        <span style="font-size: 0.85rem; color: var(--text-muted);">
+            <span class="lang-en">Click "Copy" next to each scene to paste into Google Flow</span>
+            <span class="lang-ar">انقر على "نسخ" بجانب أي مشهد للصقه مباشرة في Google Flow</span>
+        </span>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 1.25rem;">
+        {% for sc in scenes_list %}
+        {% set full_prompt = sc.visual_prompt or sc.full_prompt %}
+        <div class="card" style="background: var(--bg-surface); border: 1px solid var(--border-color); padding: 1.25rem;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; margin-bottom: 0.75rem; flex-wrap: wrap;">
+                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                    <div style="width: 32px; height: 32px; border-radius: var(--radius-sm); background: var(--accent-color); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700;">
+                        {{ sc.scene_index }}
+                    </div>
+                    <div>
+                        <h3 style="margin: 0; font-size: 1.1rem; font-weight: 600;">
+                            Scene {{ sc.scene_index }} <span style="font-size: 0.85rem; color: var(--text-muted); font-weight: normal;">({{ sc.scene_id }})</span>
+                        </h3>
+                        <div style="display: flex; gap: 0.5rem; margin-top: 0.25rem;">
+                            <span class="badge badge-info">{{ sc.target_duration_sec }}s</span>
+                            <span class="badge badge-success">v{{ sc.prompt_version }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 0.5rem;">
+                    <button class="btn btn-primary btn-sm" onclick="copyToClipboard('{{ full_prompt | replace('\n', ' ') | escape }}', 'Scene {{ sc.scene_index }} Prompt copied!')">
+                        <span class="lang-en">&#128203; Copy Prompt</span>
+                        <span class="lang-ar">&#128203; نسخ النص</span>
+                    </button>
+                    <a href="/scenes/{{ project.channel_id }}/{{ p_id }}/{{ sc.scene_id }}" class="btn btn-secondary btn-sm">
+                        <span class="lang-en">Edit</span>
+                        <span class="lang-ar">تعديل</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Full Prompt Display -->
+            <div style="background: var(--bg-main); padding: 0.85rem 1rem; border-radius: var(--radius-sm); font-family: monospace; font-size: 0.9rem; line-height: 1.5; color: var(--text-primary); border-left: 3px solid var(--accent-color);">
+                {{ full_prompt }}
+            </div>
+
+            {% if sc.narration_hint %}
+            <div style="margin-top: 0.5rem; font-size: 0.85rem; color: var(--text-secondary);">
+                <strong><span class="lang-en">Narration:</span><span class="lang-ar">الصوت:</span></strong> {{ sc.narration_hint }}
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+
+    {% else %}
+    <div style="text-align: center; padding: 3rem; background: var(--bg-surface); border-radius: var(--radius-sm); border: 1px solid var(--border-color);">
+        <p style="color: var(--text-muted); margin-bottom: 1.5rem;">
+            <span class="lang-en">No prompt package generated yet for this project.</span>
+            <span class="lang-ar">لم يتم توليد حزمة برومبت لهذا المشروع بعد.</span>
+        </p>
+        <form method="POST" action="/flow/outbound/{{ project.channel_id }}/{{ p_id }}/generate">
+            <button type="submit" class="btn btn-primary">
+                <span class="lang-en">Generate Flow Outbound Package</span>
+                <span class="lang-ar">توليد حزمة مخرجات Flow الآن</span>
+            </button>
+        </form>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -239,11 +239,11 @@ class FlowPromptService:
         flow_workspace_ref: Optional[str] = None,
     ) -> PromptPackage:
         """Construct a PromptPackage querying database tables (`projects` and `scenes`)."""
-        project = self.project_repo.get_by_id(project_id)
+        project = self.project_repo.get_by_id(channel_id, project_id)
         if not project:
             raise ProjectNotFoundException(project_id)
 
-        scenes = self.scene_repo.list_by_project(project_id)
+        scenes = self.scene_repo.list_by_project(channel_id, project_id)
         manifest_data = {
             "channel_id": channel_id,
             "project_id": project_id,
@@ -513,4 +513,3 @@ class FlowPromptService:
             return "Slow crane pull-out reveal shot, widening field of view to capture full garden celebration."
         else:
             return "Medium intimate eye-level shot with subtle gentle panning following character hand movement."
-

@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+
+{% set p_id = project.id or project.project_id %}
+{% set sc_id = scene.id or scene.scene_id %}
+{% set sc_seq = scene.sequence_number or scene.scene_index %}
+
+{% block title %}Edit Scene {{ sc_seq }} - Universal AI Video Studio{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+        <div>
+            <div style="display: flex; align-items: center; gap: 0.75rem;">
+                <h1 style="font-size: 1.75rem; font-weight: 700; margin: 0;">
+                    <span class="lang-en">Edit Scene {{ sc_seq }}</span>
+                    <span class="lang-ar">تعديل المشهد {{ sc_seq }}</span>
+                </h1>
+                <span class="badge badge-info">{{ sc_id }}</span>
+            </div>
+            <p style="color: var(--text-secondary); margin-top: 0.25rem;">
+                <span class="lang-en">Modify visual prompt, assign characters and outfits, and track prompt version history.</span>
+                <span class="lang-ar">تعديل النص البصري وتعيين الشخصيات والأزياء وتتبع سجل إصدارات التوليد.</span>
+            </p>
+        </div>
+        <div>
+            <a href="/storyboard/{{ project.channel_id }}/{{ p_id }}" class="btn btn-secondary">
+                <span class="lang-en">&larr; Back to Storyboard</span>
+                <span class="lang-ar">&rarr; العودة للوحة القصة</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Edit Form -->
+    <form method="POST" action="/scenes/{{ project.channel_id }}/{{ p_id }}/{{ sc_id }}/edit_prompt">
+        <div class="grid grid-2" style="margin-bottom: 1rem;">
+            <div class="form-group">
+                <label for="script_text">
+                    <span class="lang-en">Narration / Script Text</span>
+                    <span class="lang-ar">النص الصوتي / الحوار</span>
+                </label>
+                <textarea id="script_text" name="script_text" rows="4" class="form-control">{{ scene.narration_text or scene.script_text or '' }}</textarea>
+            </div>
+            <div class="form-group">
+                <label for="visual_prompt">
+                    <span class="lang-en">Visual Generation Prompt</span>
+                    <span class="lang-ar">نص التوليد البصري (Prompt)</span>
+                </label>
+                <textarea id="visual_prompt" name="visual_prompt" rows="4" class="form-control" required>{{ scene.visual_prompt or '' }}</textarea>
+            </div>
+        </div>
+
+        <div class="grid grid-3" style="margin-bottom: 1rem;">
+            <div class="form-group">
+                <label for="character_id">
+                    <span class="lang-en">Character</span>
+                    <span class="lang-ar">الشخصية</span>
+                </label>
+                <select id="character_id" name="character_id" class="form-control">
+                    <option value="">-- No Character / Environment Only --</option>
+                    {% for char in characters %}
+                    <option value="{{ char.character_id }}" {% if selected_character_id == char.character_id %}selected{% endif %}>
+                        {{ char.character_name or char.name }} ({{ char.character_id }})
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="outfit_id">
+                    <span class="lang-en">Outfit Profile</span>
+                    <span class="lang-ar">ملف الزي (Outfit)</span>
+                </label>
+                <input type="text" id="outfit_id" name="outfit_id" class="form-control" value="{{ selected_outfit_id or '' }}" placeholder="e.g. default, casual, hero">
+            </div>
+            <div class="form-group">
+                <label for="target_duration_sec">
+                    <span class="lang-en">Duration (sec)</span>
+                    <span class="lang-ar">المدة (ثوانٍ)</span>
+                </label>
+                <input type="number" step="0.5" id="target_duration_sec" name="target_duration_sec" class="form-control" value="{{ scene.duration_seconds or scene.target_duration_sec or 5.0 }}">
+            </div>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 1.5rem;">
+            <label for="modification_reason">
+                <span class="lang-en">Modification Reason (Version Tracking)</span>
+                <span class="lang-ar">سبب التعديل (لتتبع الإصدارات وحفظ السجل)</span>
+            </label>
+            <input type="text" id="modification_reason" name="modification_reason" class="form-control" placeholder="e.g. Enhanced lighting and added Tommy signature hoodie" required>
+        </div>
+
+        <button type="submit" class="btn btn-primary">
+            <span class="lang-en">Save Versioned Changes</span>
+            <span class="lang-ar">حفظ التغييرات في سجل الإصدارات</span>
+        </button>
+    </form>
+</div>
+
+<!-- Prompt Version History Table -->
+<div class="card" style="margin-top: 1.5rem;">
+    <h2 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 1rem;">
+        <span class="lang-en">Prompt Version History</span>
+        <span class="lang-ar">سجل إصدارات البرومبت</span>
+    </h2>
+
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 80px;"><span class="lang-en">Version</span><span class="lang-ar">الإصدار</span></th>
+                    <th><span class="lang-en">Prompt Text</span><span class="lang-ar">نص البرومبت</span></th>
+                    <th><span class="lang-en">Reason</span><span class="lang-ar">سبب التعديل</span></th>
+                    <th><span class="lang-en">Author</span><span class="lang-ar">المعدل</span></th>
+                    <th><span class="lang-en">Timestamp</span><span class="lang-ar">التاريخ</span></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for hist in prompt_history %}
+                <tr>
+                    <td><span class="badge badge-info">v{{ hist.version if hist.version is defined else hist.get('version', 1) }}</span></td>
+                    <td style="max-width: 400px; font-family: monospace; font-size: 0.85rem;">{{ hist.visual_prompt if hist.visual_prompt is defined else hist.get('visual_prompt', hist.get('prompt_text', '')) }}</td>
+                    <td>{{ hist.reason if hist.reason is defined else hist.get('reason', '-') }}</td>
+                    <td>{{ hist.author if hist.author is defined else hist.get('author', 'web-user') }}</td>
+                    <td style="color: var(--text-muted); font-size: 0.85rem;">{{ hist.created_at[:19] if hist.created_at else '-' }}</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 1.5rem;">
+                        <span class="lang-en">Initial version. No prior edits recorded.</span>
+                        <span class="lang-ar">الإصدار الأولي. لا توجد تعديلات سابقة مسجلة.</span>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

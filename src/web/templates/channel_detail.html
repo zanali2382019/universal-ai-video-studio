@@ -1,0 +1,188 @@
+{% extends "base.html" %}
+
+{% block title %}{{ channel.name }} - Universal AI Video Studio{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+        <div>
+            <div style="display: flex; align-items: center; gap: 0.75rem;">
+                <h1 style="font-size: 1.75rem; font-weight: 700; margin: 0;">{{ channel.name }}</h1>
+                <span class="badge badge-info">{{ channel.id }}</span>
+            </div>
+            <p style="color: var(--text-secondary); margin-top: 0.25rem;">{{ channel.description or 'No channel description provided.' }}</p>
+        </div>
+        <div style="display: flex; gap: 0.5rem;">
+            <a href="/channels" class="btn btn-secondary">
+                <span class="lang-en">&larr; Back to Channels</span>
+                <span class="lang-ar">&rarr; العودة للقنوات</span>
+            </a>
+            <a href="/projects?channel_id={{ channel.id }}" class="btn btn-primary">
+                <span class="lang-en">View Channel Projects</span>
+                <span class="lang-ar">عرض مشاريع القناة</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Channel Profile Section -->
+    <h2 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem;">
+        <span class="lang-en">Channel Profile & Brand Rules (Task 3.12)</span>
+        <span class="lang-ar">ملف تعريف القناة وقواعد الهوية (المهمة 3.12)</span>
+    </h2>
+
+    {% if profile %}
+    <form method="POST" action="/channels/{{ channel.id }}/edit">
+        <div class="grid grid-2" style="margin-bottom: 1rem;">
+            <div class="form-group">
+                <label for="brand_description">
+                    <span class="lang-en">Brand Description</span>
+                    <span class="lang-ar">وصف العلامة التجارية</span>
+                </label>
+                <textarea id="brand_description" name="brand_description" rows="3" class="form-control">{{ profile.brand_description }}</textarea>
+            </div>
+            <div class="form-group">
+                <label for="visual_style">
+                    <span class="lang-en">Visual Style</span>
+                    <span class="lang-ar">النمط البصري</span>
+                </label>
+                <textarea id="visual_style" name="visual_style" rows="3" class="form-control">{{ profile.visual_style.style_prompt if (profile.visual_style and profile.visual_style.style_prompt is defined) else (profile.visual_style or '') }}</textarea>
+            </div>
+        </div>
+
+        <div class="grid grid-4" style="margin-bottom: 1rem;">
+            <div class="form-group">
+                <label for="color_primary">
+                    <span class="lang-en">Primary Color</span>
+                    <span class="lang-ar">اللون الأساسي</span>
+                </label>
+                <input type="text" id="color_primary" name="color_primary" class="form-control" value="{{ profile.color_palette.get('primary', '') }}">
+            </div>
+            <div class="form-group">
+                <label for="color_secondary">
+                    <span class="lang-en">Secondary Color</span>
+                    <span class="lang-ar">اللون الثانوي</span>
+                </label>
+                <input type="text" id="color_secondary" name="color_secondary" class="form-control" value="{{ profile.color_palette.get('secondary', '') }}">
+            </div>
+            <div class="form-group">
+                <label for="color_accent">
+                    <span class="lang-en">Accent Color</span>
+                    <span class="lang-ar">لون التمييز</span>
+                </label>
+                <input type="text" id="color_accent" name="color_accent" class="form-control" value="{{ profile.color_palette.get('accent', '') }}">
+            </div>
+            <div class="form-group">
+                <label for="color_background">
+                    <span class="lang-en">Background Color</span>
+                    <span class="lang-ar">لون الخلفية</span>
+                </label>
+                <input type="text" id="color_background" name="color_background" class="form-control" value="{{ profile.color_palette.get('background', '') }}">
+            </div>
+        </div>
+
+        <div class="grid grid-3" style="margin-bottom: 1rem;">
+            <div class="form-group">
+                <label for="aspect_ratio">
+                    <span class="lang-en">Default Aspect Ratio</span>
+                    <span class="lang-ar">نسبة الأبعاد الافتراضية</span>
+                </label>
+                <select id="aspect_ratio" name="aspect_ratio" class="form-control">
+                    <option value="9:16" {% if profile.aspect_ratio == '9:16' %}selected{% endif %}>9:16 (Vertical / Shorts)</option>
+                    <option value="16:9" {% if profile.aspect_ratio == '16:9' %}selected{% endif %}>16:9 (Horizontal / Standard)</option>
+                    <option value="1:1" {% if profile.aspect_ratio == '1:1' %}selected{% endif %}>1:1 (Square)</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="language">
+                    <span class="lang-en">Language</span>
+                    <span class="lang-ar">اللغة</span>
+                </label>
+                <input type="text" id="language" name="language" class="form-control" value="{{ profile.language }}">
+            </div>
+            <div class="form-group">
+                <label for="target_duration_sec">
+                    <span class="lang-en">Default Scene Duration (sec)</span>
+                    <span class="lang-ar">مدة المشهد الافتراضية (ثوانٍ)</span>
+                </label>
+                <input type="number" step="0.1" id="target_duration_sec" name="target_duration_sec" class="form-control" value="{{ profile.production_preferences.get('default_scene_duration_sec', 5.0) }}">
+            </div>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 1.5rem;">
+            <label for="branding_rules">
+                <span class="lang-en">Branding & Consistency Rules (one per line)</span>
+                <span class="lang-ar">قواعد العلامة التجارية والاتساق (قاعدة لكل سطر)</span>
+            </label>
+            <textarea id="branding_rules" name="branding_rules" rows="4" class="form-control">{% for rule in profile.branding_rules %}{{ rule }}&#10;{% endfor %}</textarea>
+        </div>
+
+        <button type="submit" class="btn btn-primary">
+            <span class="lang-en">Save Profile Changes</span>
+            <span class="lang-ar">حفظ تغييرات الملف التعريفي</span>
+        </button>
+    </form>
+    {% else %}
+    <div style="padding: 1.5rem; background: var(--bg-hover); border-radius: var(--radius-sm); text-align: center;">
+        <p style="color: var(--text-muted); margin-bottom: 1rem;">
+            <span class="lang-en">No Channel Profile exists for this channel yet.</span>
+            <span class="lang-ar">لا يوجد ملف تعريفي لهذه القناة حتى الآن.</span>
+        </p>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Projects Section -->
+<div class="card" style="margin-top: 1.5rem;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <h2 style="font-size: 1.25rem; font-weight: 600; margin: 0;">
+            <span class="lang-en">Projects in this Channel</span>
+            <span class="lang-ar">مشاريع هذه القناة</span>
+        </h2>
+        <a href="/projects?channel_id={{ channel.id }}" class="btn btn-secondary btn-sm">
+            <span class="lang-en">Manage Projects</span>
+            <span class="lang-ar">إدارة المشاريع</span>
+        </a>
+    </div>
+
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th><span class="lang-en">Project Name</span><span class="lang-ar">اسم المشروع</span></th>
+                    <th><span class="lang-en">Aspect Ratio</span><span class="lang-ar">نسبة الأبعاد</span></th>
+                    <th><span class="lang-en">Status</span><span class="lang-ar">الحالة</span></th>
+                    <th><span class="lang-en">Created</span><span class="lang-ar">تاريخ الإنشاء</span></th>
+                    <th><span class="lang-en">Actions</span><span class="lang-ar">الإجراءات</span></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for proj in projects %}
+                <tr>
+                    <td style="font-weight: 500;">{{ proj.title or proj.name }}</td>
+                    <td><span class="badge badge-info">{{ proj.aspect_ratio }}</span></td>
+                    <td><span class="badge badge-success">{{ proj.status }}</span></td>
+                    <td style="color: var(--text-muted); font-size: 0.85rem;">{{ proj.created_at[:10] if proj.created_at else '-' }}</td>
+                    <td>
+                        <a href="/projects/{{ channel.id }}/{{ proj.id }}" class="btn btn-secondary btn-sm">
+                            <span class="lang-en">Details</span>
+                            <span class="lang-ar">التفاصيل</span>
+                        </a>
+                        <a href="/storyboard/{{ channel.id }}/{{ proj.id }}" class="btn btn-primary btn-sm">
+                            <span class="lang-en">Storyboard</span>
+                            <span class="lang-ar">لوحة القصة</span>
+                        </a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 1.5rem;">
+                        <span class="lang-en">No projects created under this channel yet.</span>
+                        <span class="lang-ar">لا توجد مشاريع منشأة ضمن هذه القناة بعد.</span>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+
+{% block title %}{{ character.character_name }} - Character Bible - Universal AI Video Studio{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+        <div>
+            <div style="display: flex; align-items: center; gap: 0.75rem;">
+                <h1 style="font-size: 1.75rem; font-weight: 700; margin: 0;">{{ character.character_name }}</h1>
+                <span class="badge badge-info">{{ character.character_id }}</span>
+                {% if character.missing_fields %}
+                <span class="badge badge-warning">PENDING_OWNER_INPUT ({{ character.missing_fields|length }})</span>
+                {% else %}
+                <span class="badge badge-success">Consistent Profile</span>
+                {% endif %}
+            </div>
+            <p style="color: var(--text-secondary); margin-top: 0.25rem;">{{ character.identity_description }}</p>
+        </div>
+        <div>
+            <a href="/characters" class="btn btn-secondary">
+                <span class="lang-en">&larr; Back to Characters</span>
+                <span class="lang-ar">&rarr; العودة للشخصيات</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Attributes and Traits Grid -->
+    <div class="grid grid-3" style="gap: 1.25rem; margin-bottom: 1.5rem;">
+        <div style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 1.25rem;">
+            <h3 style="font-size: 1rem; font-weight: 600; margin-bottom: 0.75rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.35rem;">
+                <span class="lang-en">Immutable Core Attributes</span>
+                <span class="lang-ar">السمات الثابتة</span>
+            </h3>
+            <ul style="list-style: none; padding: 0; margin: 0; font-size: 0.9rem;">
+                {% for k, v in character.immutable_attributes.items() %}
+                <li style="margin-bottom: 0.4rem; display: flex; justify-content: space-between;">
+                    <span style="color: var(--text-muted);">{{ k }}:</span>
+                    <strong>{{ v }}</strong>
+                </li>
+                {% else %}
+                <li style="color: var(--text-muted);">No extra immutable attributes.</li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        <div style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 1.25rem;">
+            <h3 style="font-size: 1rem; font-weight: 600; margin-bottom: 0.75rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.35rem;">
+                <span class="lang-en">Hair & Face Details</span>
+                <span class="lang-ar">تفاصيل الوجه والشعر</span>
+            </h3>
+            <p style="margin: 0; font-size: 0.9rem; color: var(--text-secondary); line-height: 1.5;">
+                {{ character.hair_and_face_description }}
+            </p>
+        </div>
+
+        <div style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 1.25rem;">
+            <h3 style="font-size: 1rem; font-weight: 600; margin-bottom: 0.75rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.35rem;">
+                <span class="lang-en">Expressions & Movement</span>
+                <span class="lang-ar">التعبيرات والحركة</span>
+            </h3>
+            <div style="font-size: 0.85rem; margin-bottom: 0.5rem;">
+                <strong><span class="lang-en">Movement:</span><span class="lang-ar">الحركة:</span></strong>
+                <div style="color: var(--text-secondary); margin-top: 0.2rem;">
+                    {{ character.movement_characteristics }}
+                </div>
+            </div>
+            <div style="font-size: 0.85rem;">
+                <strong><span class="lang-en">Key Expressions:</span><span class="lang-ar">التعبيرات:</span></strong>
+                <div style="color: var(--text-secondary); margin-top: 0.2rem;">
+                    {{ character.expressions.keys() | join(', ') if character.expressions else 'Default' }}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Outfits Section -->
+    <h2 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 1rem;">
+        <span class="lang-en">Outfit Profiles</span>
+        <span class="lang-ar">ملفات الأزياء المعتمدة</span>
+    </h2>
+
+    <div class="table-container" style="margin-bottom: 1.5rem;">
+        <table>
+            <thead>
+                <tr>
+                    <th><span class="lang-en">Outfit ID</span><span class="lang-ar">معرف الزي</span></th>
+                    <th><span class="lang-en">Name</span><span class="lang-ar">الاسم</span></th>
+                    <th><span class="lang-en">Description</span><span class="lang-ar">الوصف</span></th>
+                    <th><span class="lang-en">Prompt Snippet</span><span class="lang-ar">نص البرومبت المعتمد</span></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for outfit_id, outfit in character.outfit_profiles.items() %}
+                <tr>
+                    <td><code>{{ outfit_id }}</code></td>
+                    <td style="font-weight: 600;">{{ outfit.name }}</td>
+                    <td>{{ outfit.description }}</td>
+                    <td style="font-family: monospace; font-size: 0.85rem; max-width: 350px;">
+                        {{ outfit.prompt_snippet }}
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="4" style="text-align: center; color: var(--text-muted); padding: 1.5rem;">
+                        <span class="lang-en">No specific outfit profiles defined.</span>
+                        <span class="lang-ar">لا توجد ملفات أزياء محددة.</span>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Consistency Rules Section -->
+    <div class="card" style="background: var(--bg-surface); border: 1px solid var(--border-color); padding: 1.25rem;">
+        <h3 style="font-size: 1.1rem; font-weight: 600; margin-bottom: 0.75rem;">
+            <span class="lang-en">Character Consistency & Prompt Rules (Task 3.12)</span>
+            <span class="lang-ar">قواعد اتساق الشخصية والتوليد (المهمة 3.12)</span>
+        </h3>
+        <ul style="margin: 0; padding-left: 1.25rem; line-height: 1.6; color: var(--text-primary);">
+            {% for rule in character.character_consistency_rules %}
+            <li style="margin-bottom: 0.35rem;">{{ rule }}</li>
+            {% else %}
+            <li style="color: var(--text-muted);">No custom consistency rules specified.</li>
+            {% endfor %}
+        </ul>
+    </div>
+</div>
+{% endblock %}

@@ -55,6 +55,7 @@ PORTABLE_TEST_MODULES = [
     "tests.test_task_312_creative_bible",
     "tests.test_task_313_flow_inbound",
     "tests.test_task_314_rendering_engine",
+    "tests.test_task_315a_studio_gui",
 ]
 
 PRODUCTION_TEST_MODULES = [

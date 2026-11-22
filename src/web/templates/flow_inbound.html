@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+
+{% set p_id = project.id or project.project_id %}
+
+{% block title %}Flow Inbound - {{ project.title or project.name }} - Universal AI Video Studio{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+        <div>
+            <div style="display: flex; align-items: center; gap: 0.75rem;">
+                <h1 style="font-size: 1.75rem; font-weight: 700; margin: 0;">
+                    <span class="lang-en">Google Flow Inbound & Take Management</span>
+                    <span class="lang-ar">استيراد نواتج Google Flow وإدارة اللقطات</span>
+                </h1>
+                <span class="badge badge-info">{{ project.title or project.name }}</span>
+            </div>
+            <p style="color: var(--text-secondary); margin-top: 0.25rem;">
+                <span class="lang-en">Import generated video takes, review dry-run previews, and switch active takes.</span>
+                <span class="lang-ar">استيراد اللقطات المولدة، ومعاينة الاستيراد الجاف، وتفعيل اللقطة النشطة لكل مشهد.</span>
+            </p>
+        </div>
+        <div>
+            <a href="/projects/{{ project.channel_id }}/{{ p_id }}" class="btn btn-secondary">
+                <span class="lang-en">&larr; Back to Project</span>
+                <span class="lang-ar">&rarr; العودة للمشروع</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Import Form Card -->
+    <div class="card" style="background: var(--bg-surface); border: 1px solid var(--border-color); padding: 1.25rem; margin-bottom: 1.5rem;">
+        <h2 style="font-size: 1.15rem; font-weight: 600; margin-bottom: 1rem;">
+            <span class="lang-en">Import Flow Outputs (Directory Drop or Takeout)</span>
+            <span class="lang-ar">استيراد مخرجات Flow (مجلد الإسقاط أو أرشيف Takeout)</span>
+        </h2>
+
+        <form method="POST" action="/flow/inbound/{{ project.channel_id }}/{{ p_id }}/import">
+            <div class="grid grid-3" style="gap: 1rem; align-items: flex-end;">
+                <div class="form-group" style="grid-column: span 2; margin: 0;">
+                    <label for="import_path">
+                        <span class="lang-en">Folder Path on Server/Machine</span>
+                        <span class="lang-ar">مسار المجلد المحلي على الجهاز</span>
+                    </label>
+                    <input type="text" id="import_path" name="import_path" class="form-control" placeholder="e.g. C:\Users\Downloads\flow_renders\ep04" required>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; font-size: 0.9rem;">
+                        <input type="checkbox" name="dry_run" value="true" checked>
+                        <span><strong>Dry Run</strong> (Preview only - no files copied)</span>
+                    </label>
+                    <button type="submit" class="btn btn-primary" style="width: 100%;">
+                        <span class="lang-en">Run Inbound Import</span>
+                        <span class="lang-ar">بدء عملية الاستيراد</span>
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Last Import Report (if provided in session/state) -->
+    {% if import_report %}
+    <div class="card" style="background: var(--bg-surface); border-left: 4px solid var(--accent-color); padding: 1.25rem; margin-bottom: 1.5rem;">
+        <h3 style="font-size: 1.1rem; font-weight: 600; margin-bottom: 0.5rem;">
+            <span class="lang-en">Import Report</span>
+            <span class="lang-ar">تقرير الاستيراد</span>
+            {% if import_report.get('dry_run') %}
+            <span class="badge badge-warning">Dry Run (Preview)</span>
+            {% else %}
+            <span class="badge badge-success">Committed</span>
+            {% endif %}
+        </h3>
+        <div class="grid grid-4" style="gap: 1rem; margin-top: 0.75rem;">
+            <div>
+                <div style="font-size: 0.8rem; color: var(--text-muted);">
+                    {% if import_report.get('dry_run') %}Would Import{% else %}Imported{% endif %}
+                </div>
+                <div style="font-size: 1.3rem; font-weight: 700;">{{ import_report.get('imported_count', 0) }}</div>
+            </div>
+            <div>
+                <div style="font-size: 0.8rem; color: var(--text-muted);">Matched Scenes</div>
+                <div style="font-size: 1.3rem; font-weight: 700;">{{ import_report.get('matched_scenes', 0) }}</div>
+            </div>
+            <div>
+                <div style="font-size: 0.8rem; color: var(--text-muted);">Skipped Files</div>
+                <div style="font-size: 1.3rem; font-weight: 700;">{{ import_report.get('skipped_count', 0) }}</div>
+            </div>
+            <div>
+                <div style="font-size: 0.8rem; color: var(--text-muted);">Errors</div>
+                <div style="font-size: 1.3rem; font-weight: 700; color: {% if import_report.get('errors') %}#ef4444{% else %}inherit{% endif %};">
+                    {{ import_report.get('errors')|length if import_report.get('errors') else 0 }}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Scene Takes & Version History Table -->
+    <h2 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 1rem;">
+        <span class="lang-en">Scene Takes & Active Take Switcher (Task 3.13)</span>
+        <span class="lang-ar">لقطات المشاهد ومحدد اللقطة النشطة (المهمة 3.13)</span>
+    </h2>
+
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 70px;"><span class="lang-en">Scene</span><span class="lang-ar">المشهد</span></th>
+                    <th><span class="lang-en">Scene ID</span><span class="lang-ar">معرف المشهد</span></th>
+                    <th><span class="lang-en">Available Takes</span><span class="lang-ar">اللقطات المتاحة</span></th>
+                    <th><span class="lang-en">Active Take</span><span class="lang-ar">اللقطة النشطة حالياً</span></th>
+                    <th><span class="lang-en">Switch / Activate Take</span><span class="lang-ar">تفعيل لقطة</span></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for sc in scenes %}
+                {% set sc_id = sc.id or sc.scene_id %}
+                {% set sc_seq = sc.sequence_number or sc.scene_index %}
+                <tr>
+                    <td style="font-weight: 700; color: var(--accent-color);">#{{ sc_seq }}</td>
+                    <td><code>{{ sc_id }}</code></td>
+                    <td>
+                        {% set sc_takes = takes_by_scene.get(sc_id, []) %}
+                        {% if sc_takes %}
+                        <div style="display: flex; gap: 0.35rem; flex-wrap: wrap;">
+                            {% for tk in sc_takes %}
+                            <span class="badge {% if tk.is_active or tk.take_id == sc.active_take_id %}badge-success{% else %}badge-info{% endif %}" title="File: {{ tk.source_filename }}">
+                                Take {{ tk.take_number }} {% if tk.is_active or tk.take_id == sc.active_take_id %}(Active){% endif %}
+                            </span>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <span style="color: var(--text-muted); font-size: 0.85rem;">No takes imported</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if sc.active_take_id or active_takes.get(sc_id) %}
+                        <span class="badge badge-success">
+                            {{ (sc.active_take_id or active_takes.get(sc_id))[:12] }}...
+                        </span>
+                        {% else %}
+                        <span class="badge badge-warning">None</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% set sc_takes = takes_by_scene.get(sc_id, []) %}
+                        {% if sc_takes %}
+                        <form method="POST" action="/flow/inbound/{{ project.channel_id }}/{{ p_id }}/activate_take" style="display: flex; gap: 0.5rem; align-items: center; margin: 0;">
+                            <input type="hidden" name="scene_id" value="{{ sc_id }}">
+                            <select name="take_id" class="form-control" style="padding: 0.25rem 0.5rem; font-size: 0.85rem;">
+                                {% for tk in sc_takes %}
+                                <option value="{{ tk.take_id or tk.id }}" {% if tk.is_active or tk.take_id == sc.active_take_id %}selected{% endif %}>
+                                    Take {{ tk.take_number }} ({{ tk.source_filename }})
+                                </option>
+                                {% endfor %}
+                            </select>
+                            <button type="submit" class="btn btn-secondary btn-sm">
+                                <span class="lang-en">Activate</span>
+                                <span class="lang-ar">تفعيل</span>
+                            </button>
+                        </form>
+                        {% else %}
+                        <span style="color: var(--text-muted); font-size: 0.85rem;">-</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 2rem;">
+                        <span class="lang-en">No scenes found in this project.</span>
+                        <span class="lang-ar">لا توجد مشاهد في هذا المشروع.</span>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
