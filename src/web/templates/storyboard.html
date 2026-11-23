@@ -20,6 +20,10 @@
             </p>
         </div>
         <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+            <button type="button" class="btn btn-success" onclick="openModal('addSceneModal')" id="btn-add-scene">
+                <span class="lang-en">+ Add Scene</span>
+                <span class="lang-ar">+ إضافة مشهد</span>
+            </button>
             <a href="/projects/{{ project.channel_id }}/{{ p_id }}" class="btn btn-secondary">
                 <span class="lang-en">&larr; Back to Project</span>
                 <span class="lang-ar">&rarr; العودة للمشروع</span>
@@ -87,6 +91,11 @@
                         <span class="lang-en">Edit Prompt</span>
                         <span class="lang-ar">تعديل البرومبت</span>
                     </a>
+                    <form method="POST" action="/storyboard/{{ project.channel_id }}/{{ p_id }}/scenes/{{ sc_id }}/delete" style="display: inline; margin: 0;" onsubmit="return confirm('هل أنت متأكد من حذف هذا المشهد؟ / Are you sure you want to delete this scene?');">
+                        <button type="submit" class="btn btn-danger btn-sm" title="Delete Scene">
+                            &times;
+                        </button>
+                    </form>
                 </div>
             </div>
 
@@ -114,10 +123,112 @@
         </div>
         {% else %}
         <div style="text-align: center; color: var(--text-muted); padding: 3rem;">
-            <span class="lang-en">No scenes found in this project.</span>
-            <span class="lang-ar">لا توجد مشاهد في هذا المشروع.</span>
+            <span class="lang-en">No scenes found in this project. Click "+ Add Scene" to create one.</span>
+            <span class="lang-ar">لا توجد مشاهد في هذا المشروع. انقر على "+ إضافة مشهد" لإنشاء مشهد.</span>
         </div>
         {% endfor %}
     </div>
 </div>
+
+<!-- Modal: Add New Scene -->
+<div class="modal-backdrop" id="addSceneModal">
+    <div class="modal" style="max-width: 650px;">
+        <div class="modal-header">
+            <h3 class="modal-title">
+                <span class="lang-en">+ Add New Scene</span>
+                <span class="lang-ar">+ إضافة مشهد جديد</span>
+            </h3>
+            <button type="button" class="modal-close" onclick="closeModal('addSceneModal')">&times;</button>
+        </div>
+        <form method="POST" action="/storyboard/{{ project.channel_id }}/{{ p_id }}/scenes/create">
+            <div class="modal-body">
+                <div class="grid grid-2">
+                    <div class="form-group">
+                        <label for="sc_title">
+                            <span class="lang-en">Scene Title (Optional)</span>
+                            <span class="lang-ar">عنوان المشهد (اختياري)</span>
+                        </label>
+                        <input type="text" id="sc_title" name="title" class="form-control" placeholder="e.g. Exploring the Forest">
+                    </div>
+                    <div class="form-group">
+                        <label for="sc_duration">
+                            <span class="lang-en">Duration (sec)</span>
+                            <span class="lang-ar">المدة بالثواني</span>
+                        </label>
+                        <input type="number" step="0.5" min="0.5" max="300" id="sc_duration" name="duration_sec" class="form-control" value="6.0" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="sc_id">
+                        <span class="lang-en">Scene ID (Optional)</span>
+                        <span class="lang-ar">معرف المشهد (اختياري - يترك فارغاً للتوليد التلقائي)</span>
+                    </label>
+                    <input type="text" id="sc_id" name="scene_id" class="form-control" placeholder="e.g. sc_crystal_01 (auto-generated if empty)">
+                </div>
+
+                <div class="form-group">
+                    <label for="sc_visual_prompt">
+                        <span class="lang-en">Visual Description / Google Flow Prompt</span>
+                        <span class="lang-ar">الوصف البصري / برمبت Google Flow</span>
+                    </label>
+                    <textarea id="sc_visual_prompt" name="visual_prompt" rows="3" class="form-control" placeholder="Describe camera motion, characters, lighting, environment for Google Flow..." required></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="sc_narration">
+                        <span class="lang-en">Narration / Script Text</span>
+                        <span class="lang-ar">نص الراوي / الحوار والترجمة</span>
+                    </label>
+                    <textarea id="sc_narration" name="narration_text" rows="2" class="form-control" placeholder="Arabic or English script text for narration/subtitles..."></textarea>
+                </div>
+
+                <div class="grid grid-2">
+                    <div class="form-group">
+                        <label for="sc_character">
+                            <span class="lang-en">Character (Optional)</span>
+                            <span class="lang-ar">الشخصية (اختياري)</span>
+                        </label>
+                        <select id="sc_character" name="character_id" class="form-control">
+                            <option value="">-- None / لا يوجد --</option>
+                            {% for char in characters %}
+                            <option value="{{ char.character_id }}">{{ char.character_name }} ({{ char.character_id }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="sc_outfit">
+                            <span class="lang-en">Outfit (Optional)</span>
+                            <span class="lang-ar">الزي (اختياري)</span>
+                        </label>
+                        <select id="sc_outfit" name="outfit_id" class="form-control">
+                            <option value="">-- Default / الافتراضي --</option>
+                            <option value="default">Default</option>
+                            <option value="gardening">Gardening</option>
+                            <option value="stargazer">Stargazer</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('addSceneModal')">
+                    <span class="lang-en">Cancel</span>
+                    <span class="lang-ar">إلغاء</span>
+                </button>
+                <button type="submit" class="btn btn-success">
+                    <span class="lang-en">+ Add Scene</span>
+                    <span class="lang-ar">+ إضافة المشهد</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    if (window.location.hash === '#add-scene' || window.location.hash === '#addSceneModal') {
+        openModal('addSceneModal');
+    }
+});
+</script>
 {% endblock %}

@@ -64,6 +64,35 @@ body {
   direction: ltr;
 }
 
+/* Bilingual Language Toggle Rules (Task 3.17 Usability) */
+html[lang="ar"] .lang-en {
+  display: none !important;
+}
+
+html[lang="ar"] .lang-ar {
+  display: inline !important;
+}
+
+html[lang="ar"] div.lang-ar,
+html[lang="ar"] p.lang-ar,
+html[lang="ar"] blockquote.lang-ar {
+  display: block !important;
+}
+
+html[lang="en"] .lang-ar {
+  display: none !important;
+}
+
+html[lang="en"] .lang-en {
+  display: inline !important;
+}
+
+html[lang="en"] div.lang-en,
+html[lang="en"] p.lang-en,
+html[lang="en"] blockquote.lang-en {
+  display: block !important;
+}
+
 /* Layout */
 .app-header {
   background-color: var(--bg-secondary);

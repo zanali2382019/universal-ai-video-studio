@@ -459,6 +459,85 @@ class TestStudioWebUIIntegration(unittest.TestCase):
             elif "STUDIO_WEB_PORT" in os.environ:
                 del os.environ["STUDIO_WEB_PORT"]
 
+    def test_11_arabic_project_slug_and_scene_creation_ui(self):
+        """Test Arabic project ID slug generation, Scene creation via POST in Storyboard, and scene deletion."""
+        import re
+        container = self.app.state.service_container
+
+        # 1. Create a project with pure Arabic title -> slug must NOT have repeating underscores
+        resp_ar = self.client.post(
+            "/projects/create",
+            data={
+                "channel_id": "dreammatter",
+                "name": "مغامرة تومي في الغابة السحرية",
+                "aspect_ratio": "9:16",
+                "target_duration_sec": 30.0,
+            },
+            follow_redirects=False,
+        )
+        self.assertEqual(resp_ar.status_code, 303)
+        ar_loc = resp_ar.headers["location"]
+        ar_proj_id = ar_loc.split("/")[-1]
+        self.assertTrue(
+            re.match(r"^prj_[a-f0-9]{6}$", ar_proj_id),
+            f"Pure Arabic project title should generate clean 'prj_<hex6>' slug, got: {ar_proj_id}",
+        )
+        self.assertNotIn("__", ar_proj_id)
+
+        # 2. Create a project with explicit custom project_id
+        resp_custom = self.client.post(
+            "/projects/create",
+            data={
+                "channel_id": "dreammatter",
+                "name": "Custom ID Project",
+                "project_id": "prj_explicit_custom_001",
+                "aspect_ratio": "16:9",
+            },
+            follow_redirects=False,
+        )
+        self.assertEqual(resp_custom.status_code, 303)
+        self.assertEqual(resp_custom.headers["location"], "/projects/dreammatter/prj_explicit_custom_001")
+
+        # 3. Test Storyboard GET with the Arabic project
+        sb_resp = self.client.get(f"/storyboard/dreammatter/{ar_proj_id}")
+        self.assertEqual(sb_resp.status_code, 200)
+        self.assertIn("addSceneModal", sb_resp.text)
+        self.assertIn("إضافة مشهد جديد", sb_resp.text)
+
+        # 4. POST create scene in Storyboard
+        sc_resp = self.client.post(
+            f"/storyboard/dreammatter/{ar_proj_id}/scenes/create",
+            data={
+                "title": "المشهد الأول: الغابة السحرية",
+                "duration_sec": "6.5",
+                "visual_prompt": "Tommy walking in a glowing enchanted forest with bioluminescent mushrooms.",
+                "narration_text": "كان تومي يتجول في الغابة الساحرة بحثاً عن الكنز.",
+            },
+            follow_redirects=False,
+        )
+        self.assertEqual(sc_resp.status_code, 303)
+        self.assertEqual(sc_resp.headers["location"], f"/storyboard/dreammatter/{ar_proj_id}")
+
+        # Verify scene was actually persisted in repository via SceneService
+        scenes = container.scene_service.list_scenes("dreammatter", ar_proj_id)
+        self.assertEqual(len(scenes), 1)
+        created_sc = scenes[0]
+        self.assertEqual(created_sc.sequence_number, 1)
+        self.assertEqual(created_sc.duration_seconds, 6.5)
+        self.assertEqual(created_sc.title, "المشهد الأول: الغابة السحرية")
+        self.assertEqual(created_sc.visual_prompt, "Tommy walking in a glowing enchanted forest with bioluminescent mushrooms.")
+        self.assertEqual(created_sc.narration_text, "كان تومي يتجول في الغابة الساحرة بحثاً عن الكنز.")
+
+        # 5. POST delete scene
+        del_resp = self.client.post(
+            f"/storyboard/dreammatter/{ar_proj_id}/scenes/{created_sc.id}/delete",
+            follow_redirects=False,
+        )
+        self.assertEqual(del_resp.status_code, 303)
+        self.assertEqual(del_resp.headers["location"], f"/storyboard/dreammatter/{ar_proj_id}")
+        remaining_scenes = container.scene_service.list_scenes("dreammatter", ar_proj_id)
+        self.assertEqual(len(remaining_scenes), 0)
+
 
 if __name__ == "__main__":
     unittest.main()

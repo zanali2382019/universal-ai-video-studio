@@ -75,11 +75,17 @@ async def create_project(
     clean_name = name.strip()
     clean_desc = (description or "").strip()
 
+    short_hex = uuid.uuid4().hex[:6]
     if project_id and project_id.strip():
-        clean_id = project_id.strip()
+        clean_user_id = re.sub(r"[^a-zA-Z0-9_\-]", "_", project_id.strip()).strip("_")
+        clean_id = clean_user_id if clean_user_id else f"prj_{short_hex}"
     else:
-        slug = re.sub(r"[^a-zA-Z0-9_\-]", "_", clean_name.lower())[:30]
-        clean_id = f"prj_{slug}_{uuid.uuid4().hex[:6]}" if len(slug) < 3 else f"prj_{slug}"
+        slug = re.sub(r"[^a-zA-Z0-9]+", "_", clean_name.lower()).strip("_")
+        if slug and len(slug) >= 2:
+            clean_id = f"prj_{slug[:24]}_{short_hex}"
+        else:
+            # Purely Arabic or non-ASCII title -> clean format prj_<short_hex> without empty underscores
+            clean_id = f"prj_{short_hex}"
 
     proj = services.project_service.create_project(
         channel_id=clean_ch,

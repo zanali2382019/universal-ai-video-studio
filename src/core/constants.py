@@ -8,6 +8,9 @@ class AspectRatio(str, Enum):
     SQUARE_1_1 = "1:1"        # Square YouTube Shorts & Social Feeds (1080x1080)
     HORIZONTAL_16_9 = "16:9"  # Standard YouTube Horizontal & Compilations (1920x1080, 3840x2160)
 
+    def __str__(self) -> str:
+        return self.value
+
 
 class GenerationMode(str, Enum):
     """Supported multimodal generation pathways."""
@@ -15,6 +18,9 @@ class GenerationMode(str, Enum):
     IMAGE_TO_VIDEO = "image_to_video"
     DIRECT_MEDIA_INGEST = "direct_media_ingest"
     VIDEO_TO_VIDEO = "video_to_video"  # Deferred post-MVP
+
+    def __str__(self) -> str:
+        return self.value
 
 
 class ProjectStatus(str, Enum):
@@ -26,6 +32,9 @@ class ProjectStatus(str, Enum):
     COMPLETED = "completed"
     FAILED = "failed"
     CANCELLED = "cancelled"
+
+    def __str__(self) -> str:
+        return self.value
 
 
 class TaskStatus(str, Enum):
@@ -40,6 +49,9 @@ class TaskStatus(str, Enum):
     CANCELLED = "cancelled"
     PAUSED = "paused"
 
+    def __str__(self) -> str:
+        return self.value
+
 
 class TaskType(str, Enum):
     """Categorization of background tasks."""
@@ -50,6 +62,9 @@ class TaskType(str, Enum):
     VIDEO_RENDERING = "video_rendering"
     COMPLIANCE_CHECK = "compliance_check"
     GENERAL = "general"
+
+    def __str__(self) -> str:
+        return self.value
 
 
 class TaskPriority(int, Enum):

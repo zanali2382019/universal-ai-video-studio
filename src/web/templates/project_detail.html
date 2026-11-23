@@ -10,7 +10,10 @@
             <div style="display: flex; align-items: center; gap: 0.75rem;">
                 <h1 style="font-size: 1.75rem; font-weight: 700; margin: 0;">{{ project.title or project.name }}</h1>
                 <span class="badge badge-info">{{ p_id }}</span>
-                <span class="badge badge-success">{{ project.status }}</span>
+                <span class="badge badge-success">
+                    <span class="lang-en">{{ project.status.value if project.status.value is defined else project.status }}</span>
+                    <span class="lang-ar">{% if 'draft' in (project.status|string).lower() %}مسودة{% elif 'completed' in (project.status|string).lower() %}مكتمل{% elif 'rendering' in (project.status|string).lower() %}قيد الرندر{% elif 'scripting' in (project.status|string).lower() %}كتابة النص{% else %}{{ project.status.value if project.status.value is defined else project.status }}{% endif %}</span>
+                </span>
             </div>
             <p style="color: var(--text-secondary); margin-top: 0.25rem;">
                 {{ project.description or 'No project description provided.' }}
@@ -35,7 +38,7 @@
     <!-- Metrics Grid -->
     <div class="grid grid-4" style="margin-bottom: 1.5rem;">
         <div class="metric-card">
-            <div class="metric-value">{{ project.aspect_ratio or project.target_aspect_ratio }}</div>
+            <div class="metric-value">{{ project.aspect_ratio.value if project.aspect_ratio.value is defined else (project.aspect_ratio or '9:16') }}</div>
             <div class="metric-label">
                 <span class="lang-en">Aspect Ratio</span>
                 <span class="lang-ar">نسبة الأبعاد</span>
@@ -65,15 +68,21 @@
     </div>
 
     <!-- Scenes Table -->
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
         <h2 style="font-size: 1.25rem; font-weight: 600; margin: 0;">
             <span class="lang-en">Scenes</span>
             <span class="lang-ar">مشاهد المشروع</span>
         </h2>
-        <a href="/storyboard/{{ project.channel_id }}/{{ p_id }}" class="btn btn-secondary btn-sm">
-            <span class="lang-en">Manage in Storyboard</span>
-            <span class="lang-ar">إدارة في لوحة القصة</span>
-        </a>
+        <div style="display: flex; gap: 0.5rem;">
+            <a href="/storyboard/{{ project.channel_id }}/{{ p_id }}#add-scene" class="btn btn-success btn-sm">
+                <span class="lang-en">+ Add Scene</span>
+                <span class="lang-ar">+ إضافة مشهد</span>
+            </a>
+            <a href="/storyboard/{{ project.channel_id }}/{{ p_id }}" class="btn btn-secondary btn-sm">
+                <span class="lang-en">Manage in Storyboard</span>
+                <span class="lang-ar">إدارة في لوحة القصة</span>
+            </a>
+        </div>
     </div>
 
     <div class="table-container">
@@ -114,10 +123,17 @@
                         {% endif %}
                     </td>
                     <td>
-                        <a href="/scenes/{{ project.channel_id }}/{{ p_id }}/{{ sc_id }}" class="btn btn-secondary btn-sm">
-                            <span class="lang-en">Edit Prompt</span>
-                            <span class="lang-ar">تعديل البرومبت</span>
-                        </a>
+                        <div style="display: flex; gap: 0.35rem; align-items: center;">
+                            <a href="/scenes/{{ project.channel_id }}/{{ p_id }}/{{ sc_id }}" class="btn btn-secondary btn-sm">
+                                <span class="lang-en">Edit Prompt</span>
+                                <span class="lang-ar">تعديل البرومبت</span>
+                            </a>
+                            <form method="POST" action="/storyboard/{{ project.channel_id }}/{{ p_id }}/scenes/{{ sc_id }}/delete" style="display: inline; margin: 0;" onsubmit="return confirm('هل أنت متأكد من حذف هذا المشهد؟ / Delete this scene?');">
+                                <button type="submit" class="btn btn-danger btn-sm" title="Delete Scene">
+                                    &times;
+                                </button>
+                            </form>
+                        </div>
                     </td>
                 </tr>
                 {% else %}
