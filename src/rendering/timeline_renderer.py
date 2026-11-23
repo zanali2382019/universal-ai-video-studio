@@ -922,7 +922,26 @@ class TimelineRenderer:
                     f"Scene '{s.id}' (sequence {getattr(s, 'sequence_number', 0)}) has no associated visual asset in MAM."
                 )
 
-            abs_asset_path = Path(channel_workspace_dir) / matched_asset.file_path
+            # Robust physical asset path resolution
+            raw_path = Path(matched_asset.file_path)
+            abs_asset_path = None
+            if raw_path.is_absolute() and raw_path.exists():
+                abs_asset_path = raw_path
+            elif getattr(matched_asset, "storage_key", None) and self.storage:
+                try:
+                    storage_p = self.storage.get_local_path(matched_asset.storage_key)
+                    if storage_p.exists():
+                        abs_asset_path = storage_p
+                except Exception:
+                    pass
+
+            if not abs_asset_path:
+                if (Path(channel_workspace_dir) / raw_path).exists():
+                    abs_asset_path = Path(channel_workspace_dir) / raw_path
+                elif raw_path.exists():
+                    abs_asset_path = raw_path.resolve()
+                else:
+                    abs_asset_path = Path(channel_workspace_dir) / raw_path
             meta = getattr(s, "metadata_json", {}) or {}
             transition = meta.get("transition", "cut") if isinstance(meta, dict) else "cut"
             trans_dur = float(meta.get("transition_duration_sec", 0.5)) if isinstance(meta, dict) else 0.5
