@@ -4,6 +4,17 @@
 
 {% block content %}
 <div class="card">
+    {% if success_msg %}
+    <div style="margin-bottom: 1.5rem; background: rgba(34, 197, 94, 0.15); border: 1px solid #22c55e; color: #22c55e; padding: 0.75rem 1rem; border-radius: 6px; font-weight: 500;">
+        {{ success_msg }}
+    </div>
+    {% endif %}
+    {% if error_msg %}
+    <div style="margin-bottom: 1.5rem; background: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; color: #ef4444; padding: 0.75rem 1rem; border-radius: 6px; font-weight: 500;">
+        {{ error_msg }}
+    </div>
+    {% endif %}
+
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
         <div>
             <h1 style="font-size: 1.75rem; font-weight: 700; margin: 0;">
@@ -45,7 +56,7 @@
                     <th><span class="lang-en">Channel / Project</span><span class="lang-ar">القناة / المشروع</span></th>
                     <th><span class="lang-en">Size & Format</span><span class="lang-ar">الحجم والصيغة</span></th>
                     <th><span class="lang-en">SHA-256 Fingerprint</span><span class="lang-ar">بصمة SHA-256</span></th>
-                    <th><span class="lang-en">Commercial Rights</span><span class="lang-ar">الحقوق التجارية</span></th>
+                    <th><span class="lang-en">License & Status</span><span class="lang-ar">الترخيص والحالة</span></th>
                     <th><span class="lang-en">Actions</span><span class="lang-ar">الإجراءات</span></th>
                 </tr>
             </thead>
@@ -75,17 +86,58 @@
                         </code>
                     </td>
                     <td>
-                        {% if asset.license_reference %}
-                        <span class="badge badge-success">{{ asset.license_reference }}</span>
+                        {% if asset.license_id %}
+                        <div style="font-size: 0.75rem; font-family: monospace; color: var(--text-muted); margin-bottom: 0.25rem;" title="License ID">{{ asset.license_id }}</div>
+                        {% endif %}
+                        {% if asset.license_status == 'verified' %}
+                        <span class="badge badge-success">
+                            <span class="lang-en">Verified</span>
+                            <span class="lang-ar">معتمد وموثّق</span>
+                        </span>
+                        {% elif asset.license_status == 'pending_review' %}
+                        <span class="badge" style="background: rgba(245, 158, 11, 0.2); color: #f59e0b; border: 1px solid #f59e0b;">
+                            <span class="lang-en">Pending Review</span>
+                            <span class="lang-ar">بانتظار المراجعة</span>
+                        </span>
+                        {% elif asset.license_status == 'restricted' %}
+                        <span class="badge badge-danger">
+                            <span class="lang-en">Restricted</span>
+                            <span class="lang-ar">محظور</span>
+                        </span>
                         {% else %}
-                        <span class="badge badge-info">Internal / Unspecified</span>
+                        <span class="badge badge-secondary">
+                            <span class="lang-en">Unregistered</span>
+                            <span class="lang-ar">غير مسجل</span>
+                        </span>
+                        {% endif %}
+                        {% if asset.commercial_use_allowed %}
+                        <div style="font-size: 0.75rem; color: #10b981; margin-top: 0.25rem;">
+                            <span class="lang-en">&#10003; Commercial Rights</span>
+                            <span class="lang-ar">&#10003; حقوق تجارية</span>
+                        </div>
                         {% endif %}
                     </td>
                     <td>
-                        <a href="/assets/{{ asset.channel_id }}/{{ asset.id }}/file" target="_blank" class="btn btn-secondary btn-sm">
-                            <span class="lang-en">Open File</span>
-                            <span class="lang-ar">فتح الملف</span>
-                        </a>
+                        <div style="display: flex; flex-direction: column; gap: 0.35rem; align-items: flex-start;">
+                            <a href="/assets/{{ asset.channel_id }}/{{ asset.id }}/file" target="_blank" class="btn btn-secondary btn-sm" style="font-size: 0.78rem; padding: 0.25rem 0.6rem;">
+                                <span class="lang-en">Open File</span>
+                                <span class="lang-ar">فتح الملف</span>
+                            </a>
+                            {% if asset.license_status != 'verified' %}
+                            <form method="POST" action="/assets/{{ asset.id }}/verify-license" style="margin: 0;">
+                                <input type="hidden" name="channel_id" value="{{ asset.channel_id }}">
+                                <button type="submit" class="btn btn-sm btn-primary" style="font-size: 0.78rem; padding: 0.25rem 0.6rem;" title="Owner License Approval (ADR-008)">
+                                    <span class="lang-en">Approve License</span>
+                                    <span class="lang-ar">اعتماد الترخيص</span>
+                                </button>
+                            </form>
+                            {% else %}
+                            <span class="badge badge-success" style="font-size: 0.72rem; padding: 0.2rem 0.5rem;">
+                                <span class="lang-en">Approved</span>
+                                <span class="lang-ar">تم الاعتماد</span>
+                            </span>
+                            {% endif %}
+                        </div>
                     </td>
                 </tr>
                 {% else %}

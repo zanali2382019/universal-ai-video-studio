@@ -189,6 +189,7 @@ class VideoRenderTaskHandler:
             background_music_volume = float(payload.get("background_music_volume", 0.2))
             enforce_true_peak = bool(payload.get("enforce_true_peak", True))
             timeout_sec = float(payload.get("timeout_sec", 600.0))
+            clean_mode = str(payload.get("mode", "preview")).strip().lower()
 
             payload_audio_assets = list(payload.get("audio_asset_ids") or [])
             if payload.get("voiceover_asset_id") and payload["voiceover_asset_id"] not in payload_audio_assets:
@@ -261,6 +262,7 @@ class VideoRenderTaskHandler:
                     cancellation_token=cancellation_event,
                     timeout_sec=timeout_sec,
                     audio_asset_ids=payload_audio_assets,
+                    mode=clean_mode,
                 )
 
                 # Collect probe and true-peak metrics

@@ -233,6 +233,32 @@ class RenderService:
 
             # Perform license gate check
             self.license_service.check_export_eligibility(clean_ch, asset_ids_to_check)
+        elif clean_mode in ("preview", "internal_preview"):
+            # Internal Preview Mode (OBS-18): Allow verified AND pending_review assets
+            asset_ids_to_check = []
+            scenes = self.scene_repo.list_by_project(clean_ch, clean_proj)
+            for s in scenes:
+                if getattr(s, "metadata_json", None) and isinstance(s.metadata_json, dict):
+                    if "asset_id" in s.metadata_json:
+                        asset_ids_to_check.append(s.metadata_json["asset_id"])
+
+            all_assets = self.asset_repo.list_by_channel(clean_ch)
+            for a in all_assets:
+                if getattr(a, "project_id", None) == clean_proj:
+                    if a.id not in asset_ids_to_check:
+                        asset_ids_to_check.append(a.id)
+
+            try:
+                flow_takes = self.flow_inbound_repo.list_takes_for_project(clean_proj)
+                for t in flow_takes:
+                    if t.get("is_active") and t.get("asset_id"):
+                        if t["asset_id"] not in asset_ids_to_check:
+                            asset_ids_to_check.append(t["asset_id"])
+            except Exception:
+                pass
+
+            if asset_ids_to_check and hasattr(self.license_service, "check_preview_eligibility"):
+                self.license_service.check_preview_eligibility(clean_ch, asset_ids_to_check)
 
         # Format output filename
         if not output_rel_path:

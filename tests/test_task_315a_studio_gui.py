@@ -538,6 +538,137 @@ class TestStudioWebUIIntegration(unittest.TestCase):
         remaining_scenes = container.scene_service.list_scenes("dreammatter", ar_proj_id)
         self.assertEqual(len(remaining_scenes), 0)
 
+    def test_12_owner_license_approval_and_preview_support(self):
+        """Verify OBS-18:
+        1. PREVIEW render succeeds when project has an asset with 'pending_review' license status.
+        2. EXPORT render fails before approval (ADR-008 strict enforcement).
+        3. POST /assets/{asset_id}/verify-license approves license to 'verified'.
+        4. EXPORT render succeeds after approval.
+        """
+        from src.core.constants import VerificationStatus, LegalBasis
+        from src.core.exceptions import LicenseVerificationException
+
+        container = self.app.state.service_container
+        channel_id = "dreammatter"
+        project_id = "prj_obs18_test"
+
+        # Create test project via WebUI POST
+        create_resp = self.client.post(
+            "/projects/create",
+            data={
+                "channel_id": channel_id,
+                "project_id": project_id,
+                "name": "OBS-18 License Approval Test Project",
+                "aspect_ratio": "9:16",
+            },
+            follow_redirects=False,
+        )
+        self.assertEqual(create_resp.status_code, 303)
+
+        # Create dummy media file
+        dummy_file = Path(self.test_dir) / "obs18_video.mp4"
+        dummy_file.write_bytes(b"dummy mp4 data for license testing")
+        dummy_sha256 = "11223344556677889900aabbccddeeff11223344556677889900aabbccddeeff"
+
+        # Create scene
+        sc = container.scene_service.create_scene(
+            channel_id=channel_id,
+            project_id=project_id,
+            scene_input={
+                "id": "sc_obs18_01",
+                "sequence_number": 1,
+                "title": "OBS-18 Scene",
+                "duration_seconds": 4.0,
+                "visual_prompt": "Crystal river at sunset",
+                "metadata": {"asset_id": "ast_obs18_pending"},
+            },
+        )
+
+        # Register MAM asset
+        container.asset_repo.create(
+            MediaAssetCreate(
+                id="ast_obs18_pending",
+                channel_id=channel_id,
+                project_id=project_id,
+                scene_id=sc.id,
+                file_name="obs18_video.mp4",
+                file_path=str(dummy_file),
+                file_sha256=dummy_sha256,
+                file_size_bytes=len(dummy_file.read_bytes()),
+                mime_type="video/mp4",
+                asset_type=AssetType.VIDEO,
+            )
+        )
+
+        # Register license in pending_review status (default)
+        lic = container.license_service.register_license(
+            channel_id=channel_id,
+            license_input={
+                "asset_id": "ast_obs18_pending",
+                "legal_basis": LegalBasis.EXPLICIT_USER_OVERRIDE_EXCEPTION,
+                "source_uri": str(dummy_file),
+                "notes": "Initial pending review take from Flow Inbound",
+            },
+        )
+        self.assertEqual(lic.verification_status, VerificationStatus.PENDING_REVIEW)
+
+        # 1. PREVIEW render succeeds with pending_review asset (OBS-18)
+        preview_task = container.render_service.submit_render(
+            channel_id=channel_id,
+            project_id=project_id,
+            mode="preview",
+        )
+        self.assertIsNotNone(preview_task)
+        self.assertEqual(preview_task.project_id, project_id)
+
+        # 2. EXPORT render fails before approval (ADR-008 strictly blocks pending_review)
+        with self.assertRaises(LicenseVerificationException):
+            container.render_service.submit_render(
+                channel_id=channel_id,
+                project_id=project_id,
+                mode="export",
+            )
+
+        # 3. Check /assets GET page shows pending_review and Approve License button
+        assets_get = self.client.get(f"/assets?channel_id={channel_id}")
+        self.assertEqual(assets_get.status_code, 200)
+        self.assertIn("ast_obs18_pending", assets_get.text)
+        self.assertIn("Pending Review", assets_get.text)
+        self.assertIn("/assets/ast_obs18_pending/verify-license", assets_get.text)
+
+        # 4. POST /assets/{asset_id}/verify-license approves license
+        post_resp = self.client.post(
+            "/assets/ast_obs18_pending/verify-license",
+            data={
+                "channel_id": channel_id,
+                "verified_by": "channel_owner",
+                "notes": "Explicit owner license verification for OBS-18",
+            },
+            follow_redirects=False,
+        )
+        self.assertEqual(post_resp.status_code, 303)
+
+        # Verify license is now VERIFIED
+        updated_lic = container.license_service.get_license_by_asset(channel_id, "ast_obs18_pending")
+        self.assertIsNotNone(updated_lic)
+        self.assertEqual(updated_lic.verification_status, VerificationStatus.VERIFIED)
+        self.assertTrue(updated_lic.commercial_use_allowed)
+
+        # 5. EXPORT render now succeeds
+        export_task = container.render_service.submit_render(
+            channel_id=channel_id,
+            project_id=project_id,
+            mode="export",
+        )
+        self.assertIsNotNone(export_task)
+        self.assertEqual(export_task.project_id, project_id)
+
+        # 6. Verify /assets GET page now shows Verified badge and Approved indicator
+        assets_after = self.client.get(f"/assets?channel_id={channel_id}")
+        self.assertEqual(assets_after.status_code, 200)
+        self.assertIn("Verified", assets_after.text)
+        self.assertIn("Approved", assets_after.text)
+
 
 if __name__ == "__main__":
     unittest.main()

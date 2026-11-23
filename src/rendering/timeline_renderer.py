@@ -612,6 +612,7 @@ class TimelineRenderer:
         mode: str,
     ) -> None:
         """Verify ADR-008 licenses using license_service and scene metadata."""
+        clean_mode = (mode or "preview").strip().lower()
         if self.license_service and channel_id:
             asset_ids = [s.asset_id for s in scenes if s.asset_id]
             if audio_asset_ids:
@@ -620,13 +621,17 @@ class TimelineRenderer:
                         asset_ids.append(aid)
 
             if asset_ids:
-                check_fn = getattr(self.license_service, "check_export_eligibility", None) or getattr(self.license_service, "verify_asset_for_export", None)
-                if check_fn:
-                    if hasattr(self.license_service, "check_export_eligibility"):
-                        self.license_service.check_export_eligibility(channel_id, asset_ids)
-                    else:
-                        for aid in asset_ids:
-                            self.license_service.verify_asset_for_export(channel_id, aid)
+                if clean_mode == "export":
+                    check_fn = getattr(self.license_service, "check_export_eligibility", None) or getattr(self.license_service, "verify_asset_for_export", None)
+                    if check_fn:
+                        if hasattr(self.license_service, "check_export_eligibility"):
+                            self.license_service.check_export_eligibility(channel_id, asset_ids)
+                        else:
+                            for aid in asset_ids:
+                                self.license_service.verify_asset_for_export(channel_id, aid)
+                elif clean_mode in ("preview", "internal_preview"):
+                    if hasattr(self.license_service, "check_preview_eligibility"):
+                        self.license_service.check_preview_eligibility(channel_id, asset_ids)
 
         # Check scene metadata for mode
         for scene in scenes:
@@ -635,7 +640,7 @@ class TimelineRenderer:
                 continue
 
             lic_lower = lic_status.strip().lower()
-            if mode == "export":
+            if clean_mode == "export":
                 valid_export_statuses = {"commercial_allowed", "owned", "creative_commons_cc0"}
                 if lic_lower not in valid_export_statuses:
                     if lic_lower == "pending_review":
@@ -648,6 +653,11 @@ class TimelineRenderer:
                             f"Export blocked by ADR-008: Scene {scene.scene_id} asset has restricted "
                             f"license '{lic_status}'."
                         )
+            elif clean_mode in ("preview", "internal_preview"):
+                if lic_lower in {"restricted", "blocked"}:
+                    raise TimelineRenderException(
+                        f"Preview blocked: Scene {scene.scene_id} asset has restricted license '{lic_status}'."
+                    )
             elif mode == "preview":
                 if lic_lower in {"restricted", "blocked"}:
                     raise TimelineRenderException(
@@ -889,6 +899,7 @@ class TimelineRenderer:
         cancellation_token: Optional[threading.Event] = None,
         timeout_sec: float = 300.0,
         audio_asset_ids: Optional[List[str]] = None,
+        mode: str = "preview",
     ) -> Path:
         """Render complete video timeline directly from project and scene database entities."""
         scenes = scene_service.list_scenes(channel_id, project_id)
@@ -953,6 +964,7 @@ class TimelineRenderer:
             cancellation_token=cancellation_token,
             timeout_sec=timeout_sec,
             audio_asset_ids=resolved_audio_asset_ids,
+            mode=mode,
         )
 
     def render_flow_project_timeline(

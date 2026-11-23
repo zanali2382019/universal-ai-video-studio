@@ -1,5 +1,6 @@
 """License management service enforcing legal basis verification and strict export gating."""
 import logging
+import uuid
 from typing import Optional, List, Dict, Any, Union
 from pydantic import ValidationError
 
@@ -44,6 +45,9 @@ class LicenseService:
         if isinstance(license_input, dict):
             payload = dict(license_input)
             payload["channel_id"] = clean_ch
+            if "id" not in payload or not payload["id"]:
+                aid = str(payload.get("asset_id", "asset"))[:24]
+                payload["id"] = f"lic_{aid}_{uuid.uuid4().hex[:6]}"
             try:
                 data = AssetLicenseCreate(**payload)
             except ValidationError as e:
@@ -225,5 +229,46 @@ class LicenseService:
                     )
 
             self._logger.info(f"Export gate cleared successfully for {len(asset_ids)} asset(s).")
+            return True
+
+    def check_preview_eligibility(
+        self,
+        channel_id: str,
+        asset_ids: List[str],
+    ) -> bool:
+        """Internal Preview eligibility check (ADR-008 & OBS-18).
+
+        Allows assets in VERIFIED and PENDING_REVIEW statuses for internal rendering.
+        Blocks assets in RESTRICTED status or if the channel audit log is hard-locked.
+
+        Raises:
+            LicenseVerificationException: If any asset is RESTRICTED or export is locked.
+        """
+        clean_ch = channel_id.strip()
+
+        with log_context(channel_id=clean_ch):
+            # 1. Check if channel export gate is hard-locked due to audit tampering
+            is_locked, lock_reason = self._audit.is_export_locked(clean_ch)
+            if is_locked:
+                self._logger.critical(
+                    f"Preview attempt blocked on channel '{clean_ch}': Channel is HARD LOCKED ({lock_reason})."
+                )
+                raise LicenseVerificationException(
+                    asset_id="ALL",
+                    reason=f"Channel is HARD LOCKED for '{clean_ch}': {lock_reason}",
+                    details={"lock_reason": lock_reason},
+                )
+
+            # 2. Check each asset: allow VERIFIED and PENDING_REVIEW; block RESTRICTED
+            for asset_id in asset_ids:
+                lic = self._repo.get_by_asset_id(clean_ch, asset_id)
+                if lic and lic.verification_status == VerificationStatus.RESTRICTED:
+                    raise LicenseVerificationException(
+                        asset_id=asset_id,
+                        reason=f"Asset license is restricted: '{lic.notes or 'Restricted usage'}'. Restricted assets cannot be rendered.",
+                        details={"status": lic.verification_status.value},
+                    )
+
+            self._logger.info(f"Internal preview cleared for {len(asset_ids)} asset(s).")
             return True
 

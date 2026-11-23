@@ -107,7 +107,7 @@ class TestFirstVideoE2E(unittest.TestCase):
         scenes = scene_repo.list_by_project(self.channel_id, self.project_id)
         self.assertEqual(len(scenes), 3)
 
-        assets = asset_repo.list_by_channel(self.channel_id)
+        assets = [a for a in asset_repo.list_by_channel(self.channel_id) if getattr(a, "project_id", None) == self.project_id]
         self.assertGreaterEqual(len(assets), 5)
 
         for ast in assets:

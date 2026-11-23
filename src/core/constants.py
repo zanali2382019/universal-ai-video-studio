@@ -83,6 +83,9 @@ class LegalBasis(str, Enum):
     VERIFIED_PUBLIC_DOMAIN_CC0 = "verified_public_domain_cc0"
     EXPLICIT_USER_OVERRIDE_EXCEPTION = "explicit_user_override_exception"
 
+    def __str__(self) -> str:
+        return self.value
+
 
 class LicenseType(str, Enum):
     """Common license classifications for media assets."""
@@ -93,12 +96,18 @@ class LicenseType(str, Enum):
     AI_GENERATED_COMMERCIAL = "AI Generated (Commercial Rights)"
     UNKNOWN = "Unknown / Pending Review"
 
+    def __str__(self) -> str:
+        return self.value
+
 
 class VerificationStatus(str, Enum):
     """License verification status for an asset (ADR-008)."""
     VERIFIED = "verified"
     PENDING_REVIEW = "pending_review"
     RESTRICTED = "restricted"
+
+    def __str__(self) -> str:
+        return self.value
 
 
 class AssetType(str, Enum):
@@ -107,6 +116,9 @@ class AssetType(str, Enum):
     AUDIO = "audio"
     VIDEO = "video"
     FONT = "font"
+
+    def __str__(self) -> str:
+        return self.value
 
 
 class AudioRole(str, Enum):
