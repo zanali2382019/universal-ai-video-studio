@@ -139,6 +139,41 @@ python scripts/run_tests.py --suite all
 > [!NOTE]
 > In clean CI environments where production media files are not checked into Git, production tests automatically skip (`unittest.SkipTest`) without error, while all portable unit, integration, and synthetic rendering tests run and validate 100% offline.
 
+### 5. Launch Studio WebUI (Task 3.15a / 3.15b / 3.16 / 3.17)
+
+Run the full-featured, zero-npm Python local WebUI on port 8050:
+
+```bash
+python scripts/run_studio_web.py --port 8050
+```
+
+Access the interface in your browser at `http://127.0.0.1:8050`:
+- **Dashboard & Channels**: Multi-channel overview, active production stats, and intelligence summary.
+- **Storyboard & Prompts**: Multi-take prompt editor, Character Bible, and Google Flow Outbound/Inbound integration.
+- **Render Queue & Batches**: Visual job dispatching, multi-worker queue management, and batch operations.
+- **Video Player**: HTTP Range streaming (206 Partial Content) with zero-leak handle management.
+- **Export & Publishing**: Multi-platform profiles, Arabic thumbnail generator, and license preflight.
+- **Production Intelligence (`/intelligence`)**: Resource consumption footprints, deterministic insights, flow credit ledger, cost tracking, and CSV/JSON reporting.
+
+### 6. Production Intelligence CLI (Task 3.17)
+
+Comprehensive CLI for resource auditing, cost analytics, and credit logging:
+
+```bash
+# Show channel intelligence summary
+python -m src.cli.intelligence summary --channel ch_dreammatter_001
+
+# Export intelligence reports (JSON / CSV)
+python -m src.cli.intelligence export --channel ch_dreammatter_001 --format json --output report.json
+python -m src.cli.intelligence export --channel ch_dreammatter_001 --format csv --output report.csv
+
+# Log manual Google Flow credit transactions
+python -m src.cli.intelligence credit log --channel ch_dreammatter_001 --amount 50 --type TOPUP --desc "Monthly refill"
+
+# Configure production unit cost rates
+python -m src.cli.intelligence cost set --channel ch_dreammatter_001 --unit-scene 0.15 --unit-min 0.50 --currency USD
+```
+
 ---
 
 ## 🔒 Security & Compliance

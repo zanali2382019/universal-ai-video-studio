@@ -110,11 +110,35 @@ async def dashboard_view(
         "batch_jobs_count": batch_jobs_count,
     }
 
+    # Production Intelligence Summary (Task 3.17)
+    primary_ch_id = channels[0].id if channels else ""
+    intel_summary = {
+        "storage_human": "0 B",
+        "flow_credits": 0.0,
+        "success_rate": 100.0,
+        "estimated_cost": "$0.00",
+    }
+    if primary_ch_id:
+        try:
+            st_data = services.intelligence_service.get_channel_storage_breakdown(primary_ch_id)
+            crd_data = services.intelligence_service.get_flow_credit_summary(primary_ch_id)
+            rnd_data = services.intelligence_service.get_render_analytics(primary_ch_id)
+            cst_data = services.intelligence_service.calculate_costs(primary_ch_id)
+            intel_summary = {
+                "storage_human": st_data.get("human_size", "0 B"),
+                "flow_credits": crd_data.get("current_balance", 0.0),
+                "success_rate": rnd_data.get("success_rate_percent", 100.0),
+                "estimated_cost": f"{cst_data.get('estimated_cost', 0.0):.2f} {cst_data.get('currency', 'USD')}",
+            }
+        except Exception:
+            pass
+
     return templates.TemplateResponse(
         request=request,
         name="dashboard.html",
         context={
             "stats": stats,
             "project_flow_stats": project_flow_stats,
+            "intel_summary": intel_summary,
         },
     )

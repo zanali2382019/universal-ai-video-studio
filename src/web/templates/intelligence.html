@@ -1,0 +1,562 @@
+{% extends "base.html" %}
+
+{% block title %}Production Intelligence - Universal AI Video Studio{% endblock %}
+
+{% block content %}
+<!-- Top Header & Actions -->
+<div class="card" style="margin-bottom: 1.5rem;">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+        <div>
+            <h1 style="font-size: 1.75rem; font-weight: 700; margin: 0;">
+                <span class="lang-en">Production Intelligence & Resource Tracking</span>
+                <span class="lang-ar">ذكاء الإنتاج وتتبع الموارد والتكاليف</span>
+            </h1>
+            <p style="color: var(--text-secondary); margin-top: 0.25rem;">
+                <span class="lang-en">Deterministic efficiency analytics, storage footprints, unit cost estimations, and manual Flow ledger tracking.</span>
+                <span class="lang-ar">تحليلات الكفاءة الحتمية، أحجام التخزين، التكاليف التقديرية، وسجل أرصدة Flow اليدوي.</span>
+            </p>
+        </div>
+        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+            {% if selected_channel_id %}
+            <a href="/intelligence/report/json?channel_id={{ selected_channel_id }}" class="btn btn-secondary btn-sm" download>
+                <span class="lang-en">📥 Export JSON</span>
+                <span class="lang-ar">📥 تقرير JSON</span>
+            </a>
+            <a href="/intelligence/report/csv?channel_id={{ selected_channel_id }}" class="btn btn-secondary btn-sm" download>
+                <span class="lang-en">📊 Export CSV</span>
+                <span class="lang-ar">📊 تقرير CSV</span>
+            </a>
+            <button type="button" class="btn btn-primary btn-sm" onclick="document.getElementById('credit-modal').style.display='block'">
+                <span class="lang-en">+ Log Flow Credits</span>
+                <span class="lang-ar">+ تسجيل رصيد Flow</span>
+            </button>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('cost-modal').style.display='block'">
+                <span class="lang-en">⚙ Cost Rates</span>
+                <span class="lang-ar">⚙ تسعير الوحدات</span>
+            </button>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{% if error_msg %}
+<div class="alert alert-danger" style="margin-bottom: 1.5rem;">
+    <span>⚠</span> <span>{{ error_msg }}</span>
+</div>
+{% endif %}
+
+{% if success_msg %}
+<div class="alert alert-success" style="margin-bottom: 1.5rem;">
+    <span>✓</span> <span>{{ success_msg }}</span>
+</div>
+{% endif %}
+
+<!-- Channel Selector -->
+<div class="card" style="margin-bottom: 1.5rem; padding: 1rem 1.25rem;">
+    <form method="GET" action="/intelligence" style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+        <label style="font-weight: 600; min-width: 120px;">
+            <span class="lang-en">Active Channel:</span>
+            <span class="lang-ar">القناة النشطة:</span>
+        </label>
+        <select name="channel_id" class="form-control" style="max-width: 350px;" onchange="this.form.submit()">
+            {% for ch in channels %}
+            <option value="{{ ch.id }}" {% if ch.id == selected_channel_id %}selected{% endif %}>
+                {{ ch.name }} ({{ ch.handle }})
+            </option>
+            {% endfor %}
+        </select>
+        {% if selected_project_id %}
+        <input type="hidden" name="project_id" value="{{ selected_project_id }}">
+        {% endif %}
+    </form>
+</div>
+
+<!-- Deterministic Operational Insights & Recommendations -->
+{% if insights %}
+<div class="card" style="margin-bottom: 1.5rem; background: var(--bg-surface); border: 1px solid var(--border-color);">
+    <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem;">
+        <span style="font-size: 1.25rem;">⚡</span>
+        <h2 style="font-size: 1.15rem; font-weight: 600; margin: 0;">
+            <span class="lang-en">Deterministic Production Insights & Recommendations</span>
+            <span class="lang-ar">إشارات وتوصيات الإنتاج الحتمية (Deterministic)</span>
+        </h2>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+        {% for ins in insights %}
+        <div style="display: flex; align-items: flex-start; gap: 0.75rem; padding: 0.75rem 1rem; border-radius: 6px;
+            {% if ins.severity == 'danger' %}background: rgba(239, 68, 68, 0.1); border-left: 4px solid #ef4444;{% elif ins.severity == 'warning' %}background: rgba(245, 158, 11, 0.1); border-left: 4px solid #f59e0b;{% elif ins.severity == 'success' %}background: rgba(16, 185, 129, 0.1); border-left: 4px solid #10b981;{% else %}background: rgba(59, 130, 246, 0.1); border-left: 4px solid #3b82f6;{% endif %}">
+            <span style="font-size: 1.1rem; line-height: 1;">
+                {% if ins.severity == 'danger' %}🛑{% elif ins.severity == 'warning' %}⚠️{% elif ins.severity == 'success' %}✅{% else %}ℹ️{% endif %}
+            </span>
+            <div style="flex: 1;">
+                <div style="font-weight: 600; font-size: 0.95rem;">
+                    <span class="lang-en">{{ ins.title_en }}</span>
+                    <span class="lang-ar">{{ ins.title_ar }}</span>
+                </div>
+                <div style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 0.2rem;">
+                    <span class="lang-en">{{ ins.message_en }}</span>
+                    <span class="lang-ar">{{ ins.message_ar }}</span>
+                </div>
+                {% if ins.action_recommendation %}
+                <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.35rem; font-style: italic;">
+                    <span class="lang-en">Action: {{ ins.action_recommendation }}</span>
+                    <span class="lang-ar">الإجراء المقترح: {{ ins.action_recommendation }}</span>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+<!-- Key Metrics Grid -->
+<div class="grid grid-4" style="margin-bottom: 1.5rem; gap: 1rem;">
+    <!-- Storage KPI -->
+    <div class="metric-card">
+        <div class="metric-value">{{ storage_info.human_size or '0 B' }}</div>
+        <div class="metric-label">
+            <span class="lang-en">Channel Storage Footprint</span>
+            <span class="lang-ar">حجم التخزين الفعلي للقناة</span>
+        </div>
+        <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.35rem;">
+            {{ storage_info.total_gb or 0.0 }} GB total
+        </div>
+    </div>
+
+    <!-- Render Performance KPI -->
+    <div class="metric-card">
+        <div class="metric-value" style="color: {% if render_analytics.success_rate_percent >= 90 %}#10b981{% elif render_analytics.success_rate_percent >= 75 %}#f59e0b{% else %}#ef4444{% endif %};">
+            {{ render_analytics.success_rate_percent or 100.0 }}%
+        </div>
+        <div class="metric-label">
+            <span class="lang-en">Render Success Rate</span>
+            <span class="lang-ar">نسبة نجاح مهام الرندر</span>
+        </div>
+        <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.35rem;">
+            {{ render_analytics.completed_count or 0 }}/{{ render_analytics.total_renders or 0 }} completed
+        </div>
+    </div>
+
+    <!-- Google Flow Balance KPI -->
+    <div class="metric-card">
+        <div class="metric-value" style="color: #3b82f6;">
+            {{ flow_credits.current_balance or 0.0 }}
+        </div>
+        <div class="metric-label">
+            <span class="lang-en">Flow Credit Balance</span>
+            <span class="lang-ar">رصيد Flow الحالي (يدوي)</span>
+        </div>
+        <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.35rem;">
+            <span class="badge badge-info" style="font-size: 0.7rem;">Manual User Entry</span>
+        </div>
+    </div>
+
+    <!-- Production Cost KPI (Known vs Estimated) -->
+    <div class="metric-card">
+        <div class="metric-value" style="color: #f59e0b; font-size: 1.5rem;">
+            {{ cost_info.estimated_cost_label or '0.00 USD' }}
+        </div>
+        <div class="metric-label">
+            <span class="lang-en">Estimated Unit Cost</span>
+            <span class="lang-ar">التكلفة التقديرية</span>
+        </div>
+        <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.35rem;">
+            Known Cost: <span style="font-weight: 600;">{{ cost_info.actual_cost_label }}</span>
+        </div>
+    </div>
+</div>
+
+<!-- System Telemetry Bar (Abstracted, Zero Path Leak) -->
+<div class="card" style="margin-bottom: 1.5rem; padding: 0.85rem 1.25rem; background: var(--bg-surface); border: 1px solid var(--border-color);">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; font-size: 0.85rem;">
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <span>🖥️</span>
+            <span style="font-weight: 600;">
+                <span class="lang-en">Host Resources:</span>
+                <span class="lang-ar">موارد النظام:</span>
+            </span>
+            <span>{{ system_resources.cpu_cores }} CPU Cores</span>
+        </div>
+        <div>
+            <span>💾 Disk Space:</span>
+            <span style="font-weight: 600;">{{ system_resources.disk.used_human }} used / {{ system_resources.disk.total_human }} total ({{ system_resources.disk.percent_used }}%)</span>
+            <span style="color: var(--text-secondary); margin-left: 0.5rem;">({{ system_resources.disk.free_human }} free)</span>
+        </div>
+        <div>
+            <span>🧠 RAM:</span>
+            <span style="font-weight: 600;">{{ system_resources.memory.percent_used or 'N/A' }}% used</span>
+            <span style="color: var(--text-secondary); margin-left: 0.5rem;">({{ system_resources.memory.available_human }} available)</span>
+        </div>
+    </div>
+</div>
+
+<!-- Main Intelligence Sections Grid -->
+<div class="grid grid-2" style="margin-bottom: 1.5rem; gap: 1.5rem;">
+    <!-- Storage Breakdown Section -->
+    <div class="card">
+        <h2 style="font-size: 1.15rem; font-weight: 600; margin-top: 0; margin-bottom: 1rem;">
+            <span class="lang-en">Storage Footprint Breakdown</span>
+            <span class="lang-ar">تفاصيل حجم التخزين حسب النوع والمشروع</span>
+        </h2>
+
+        <!-- Category Progress Bars -->
+        <div style="display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 1.25rem;">
+            {% for cat_name, cat_data in storage_info.by_category.items() %}
+            <div>
+                <div style="display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 0.25rem;">
+                    <span style="text-transform: capitalize; font-weight: 500;">{{ cat_name }}</span>
+                    <span>{{ cat_data.human_size }} ({{ cat_data.percent }}%)</span>
+                </div>
+                <div style="background: rgba(255, 255, 255, 0.1); height: 8px; border-radius: 4px; overflow: hidden;">
+                    <div style="background: {% if cat_name == 'video' %}#3b82f6{% elif cat_name == 'audio' %}#10b981{% elif cat_name == 'image' %}#8b5cf6{% elif cat_name == 'packages' %}#f59e0b{% else %}#64748b{% endif %}; height: 100%; width: {{ cat_data.percent }}%;"></div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Projects Storage Table -->
+        <h3 style="font-size: 0.95rem; font-weight: 600; margin-bottom: 0.5rem;">
+            <span class="lang-en">Per-Project Footprint</span>
+            <span class="lang-ar">حجم التخزين لكل مشروع</span>
+        </h3>
+        <div class="table-container" style="max-height: 200px; overflow-y: auto;">
+            <table>
+                <thead>
+                    <tr>
+                        <th><span class="lang-en">Project</span><span class="lang-ar">المشروع</span></th>
+                        <th><span class="lang-en">Files</span><span class="lang-ar">الملفات</span></th>
+                        <th><span class="lang-en">Storage</span><span class="lang-ar">المساحة</span></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in storage_info.by_project %}
+                    <tr>
+                        <td style="font-weight: 500;">{{ p.title }}</td>
+                        <td>{{ p.file_count }}</td>
+                        <td>{{ p.human_size }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="3" style="text-align: center; color: var(--text-secondary);">No projects registered.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Render Performance & Timing Analytics -->
+    <div class="card">
+        <h2 style="font-size: 1.15rem; font-weight: 600; margin-top: 0; margin-bottom: 1rem;">
+            <span class="lang-en">Render Performance Analytics</span>
+            <span class="lang-ar">تحليلات سرعة ومعدلات نجاح الرندر</span>
+        </h2>
+
+        <div class="grid grid-2" style="gap: 1rem; margin-bottom: 1.25rem;">
+            <div style="background: var(--bg-surface); padding: 0.75rem 1rem; border-radius: 6px; border: 1px solid var(--border-color);">
+                <div style="font-size: 0.8rem; color: var(--text-secondary);">Average Duration</div>
+                <div style="font-size: 1.2rem; font-weight: 700; margin-top: 0.2rem;">
+                    {{ render_analytics.timing.avg_formatted }}
+                </div>
+            </div>
+            <div style="background: var(--bg-surface); padding: 0.75rem 1rem; border-radius: 6px; border: 1px solid var(--border-color);">
+                <div style="font-size: 0.8rem; color: var(--text-secondary);">Total Measured Time</div>
+                <div style="font-size: 1.2rem; font-weight: 700; margin-top: 0.2rem;">
+                    {{ render_analytics.timing.total_formatted }}
+                </div>
+            </div>
+            <div style="background: var(--bg-surface); padding: 0.75rem 1rem; border-radius: 6px; border: 1px solid var(--border-color);">
+                <div style="font-size: 0.8rem; color: var(--text-secondary);">Tasks with Retries</div>
+                <div style="font-size: 1.2rem; font-weight: 700; margin-top: 0.2rem; color: {% if render_analytics.tasks_with_retries > 0 %}#f59e0b{% else %}#10b981{% endif %};">
+                    {{ render_analytics.tasks_with_retries }}
+                </div>
+            </div>
+            <div style="background: var(--bg-surface); padding: 0.75rem 1rem; border-radius: 6px; border: 1px solid var(--border-color);">
+                <div style="font-size: 0.8rem; color: var(--text-secondary);">Retry Rate %</div>
+                <div style="font-size: 1.2rem; font-weight: 700; margin-top: 0.2rem;">
+                    {{ render_analytics.retry_rate_percent }}%
+                </div>
+            </div>
+        </div>
+
+        <!-- Render Status Breakdown -->
+        <div style="font-size: 0.85rem; color: var(--text-secondary);">
+            <div style="display: flex; justify-content: space-between; padding: 0.35rem 0; border-bottom: 1px solid var(--border-color);">
+                <span>Completed Tasks:</span>
+                <span style="font-weight: 600; color: #10b981;">{{ render_analytics.completed_count }}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; padding: 0.35rem 0; border-bottom: 1px solid var(--border-color);">
+                <span>Failed Tasks:</span>
+                <span style="font-weight: 600; color: #ef4444;">{{ render_analytics.failed_count }}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; padding: 0.35rem 0; border-bottom: 1px solid var(--border-color);">
+                <span>Queued / Running:</span>
+                <span style="font-weight: 600; color: #3b82f6;">{{ render_analytics.queued_count + render_analytics.running_count }}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; padding: 0.35rem 0;">
+                <span>Cancelled:</span>
+                <span style="font-weight: 600;">{{ render_analytics.cancelled_count }}</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Google Flow Credit Ledger & Cost Rate Cards -->
+<div class="grid grid-2" style="margin-bottom: 1.5rem; gap: 1.5rem;">
+    <!-- Google Flow Credit Ledger -->
+    <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <div>
+                <h2 style="font-size: 1.15rem; font-weight: 600; margin: 0;">
+                    <span class="lang-en">Google Flow Credit Ledger</span>
+                    <span class="lang-ar">سجل أرصدة Google Flow اليدوي</span>
+                </h2>
+                <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.2rem;">
+                    {{ flow_credits.attribution }}
+                </div>
+            </div>
+            <button type="button" class="btn btn-primary btn-sm" onclick="document.getElementById('credit-modal').style.display='block'">
+                + Log Entry
+            </button>
+        </div>
+
+        <div class="table-container" style="max-height: 250px; overflow-y: auto;">
+            <table>
+                <thead>
+                    <tr>
+                        <th><span class="lang-en">Type</span><span class="lang-ar">النوع</span></th>
+                        <th><span class="lang-en">Amount</span><span class="lang-ar">الكمية</span></th>
+                        <th><span class="lang-en">Balance</span><span class="lang-ar">الرصيد</span></th>
+                        <th><span class="lang-en">Note</span><span class="lang-ar">الملاحظة</span></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for tx in flow_credits.transactions %}
+                    <tr>
+                        <td>
+                            <span class="badge {% if tx.transaction_type == 'topup' %}badge-success{% elif tx.transaction_type == 'usage' %}badge-warning{% else %}badge-info{% endif %}">
+                                {{ tx.transaction_type }}
+                            </span>
+                        </td>
+                        <td style="font-weight: 600; color: {% if tx.credits_amount > 0 %}#10b981{% else %}#ef4444{% endif %};">
+                            {{ "%+.2f"|format(tx.credits_amount) }}
+                        </td>
+                        <td>{{ tx.balance_after }}</td>
+                        <td style="font-size: 0.8rem; color: var(--text-secondary);">
+                            {{ tx.operator_note or 'Manual Entry' }}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="4" style="text-align: center; color: var(--text-secondary); padding: 1.5rem 0;">
+                            No credit transactions logged yet. Use '+ Log Entry' to record initial Flow balance.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Production Cost Breakdown -->
+    <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <div>
+                <h2 style="font-size: 1.15rem; font-weight: 600; margin: 0;">
+                    <span class="lang-en">Production Cost Configuration</span>
+                    <span class="lang-ar">هيكلية التكاليف التقديرية</span>
+                </h2>
+                <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.2rem;">
+                    {{ cost_info.attribution }}
+                </div>
+            </div>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('cost-modal').style.display='block'">
+                ⚙ Edit Rates
+            </button>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+            <div style="background: var(--bg-surface); padding: 0.75rem 1rem; border-radius: 6px; border: 1px solid var(--border-color);">
+                <div style="display: flex; justify-content: space-between; font-size: 0.85rem;">
+                    <span style="font-weight: 500;">Render Compute Rate:</span>
+                    <span>{{ cost_info.unit_rates.cost_per_render_second }} {{ cost_info.currency }} / sec</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.25rem;">
+                    <span>Billed: {{ cost_info.sub_costs.render_seconds_billed }}s</span>
+                    <span style="font-weight: 600;">{{ cost_info.sub_costs.render_cost }} {{ cost_info.currency }}</span>
+                </div>
+            </div>
+
+            <div style="background: var(--bg-surface); padding: 0.75rem 1rem; border-radius: 6px; border: 1px solid var(--border-color);">
+                <div style="display: flex; justify-content: space-between; font-size: 0.85rem;">
+                    <span style="font-weight: 500;">Storage Rate:</span>
+                    <span>{{ cost_info.unit_rates.cost_per_storage_gb_month }} {{ cost_info.currency }} / GB / mo</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.25rem;">
+                    <span>Billed: {{ cost_info.sub_costs.storage_gb_billed }} GB</span>
+                    <span style="font-weight: 600;">{{ cost_info.sub_costs.storage_cost }} {{ cost_info.currency }}</span>
+                </div>
+            </div>
+
+            <div style="background: var(--bg-surface); padding: 0.75rem 1rem; border-radius: 6px; border: 1px solid var(--border-color);">
+                <div style="display: flex; justify-content: space-between; font-size: 0.85rem;">
+                    <span style="font-weight: 500;">Flow API / Take Rate:</span>
+                    <span>{{ cost_info.unit_rates.cost_per_api_take }} {{ cost_info.currency }} / take</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.25rem;">
+                    <span>Billed: {{ cost_info.sub_costs.flow_takes_billed }} takes</span>
+                    <span style="font-weight: 600;">{{ cost_info.sub_costs.flow_api_cost }} {{ cost_info.currency }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Unified Production Version History Timeline -->
+<div class="card" style="margin-bottom: 2rem;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <h2 style="font-size: 1.15rem; font-weight: 600; margin: 0;">
+            <span class="lang-en">Unified Production Version History</span>
+            <span class="lang-ar">سجل تاريخ الإنتاج الموحد (Tasks, Takes, Releases, Audits)</span>
+        </h2>
+        <span class="badge badge-info">Chronological Timeline</span>
+    </div>
+
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th><span class="lang-en">Timestamp</span><span class="lang-ar">الوقت</span></th>
+                    <th><span class="lang-en">Event Type</span><span class="lang-ar">نوع الحدث</span></th>
+                    <th><span class="lang-en">Identifier</span><span class="lang-ar">المعرف</span></th>
+                    <th><span class="lang-en">Title</span><span class="lang-ar">العنوان</span></th>
+                    <th><span class="lang-en">Details</span><span class="lang-ar">التفاصيل</span></th>
+                    <th><span class="lang-en">Status</span><span class="lang-ar">الحالة</span></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in history %}
+                <tr>
+                    <td style="font-size: 0.8rem; color: var(--text-secondary); white-space: nowrap;">
+                        {{ item.timestamp[:19] if item.timestamp else 'N/A' }}
+                    </td>
+                    <td>
+                        <span class="badge {% if item.type == 'render_task' %}badge-primary{% elif item.type == 'flow_take' %}badge-info{% elif item.type == 'export_package' %}badge-success{% else %}badge-secondary{% endif %}">
+                            {{ item.type }}
+                        </span>
+                    </td>
+                    <td style="font-family: monospace; font-size: 0.8rem;">{{ item.event_id }}</td>
+                    <td style="font-weight: 500;">{{ item.title }}</td>
+                    <td style="font-size: 0.85rem; color: var(--text-secondary);">{{ item.details }}</td>
+                    <td>
+                        <span class="badge {% if item.status in ('completed', 'active', 'success') %}badge-success{% elif item.status in ('failed', 'restricted') %}badge-danger{% else %}badge-warning{% endif %}">
+                            {{ item.status }}
+                        </span>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" style="text-align: center; color: var(--text-secondary); padding: 1.5rem 0;">
+                        No historical production events found.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal 1: Log Google Flow Credits -->
+<div id="credit-modal" class="modal" style="display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6);">
+    <div style="background: var(--bg-surface); max-width: 480px; margin: 8% auto; padding: 1.75rem; border-radius: 8px; border: 1px solid var(--border-color); box-shadow: 0 8px 24px rgba(0,0,0,0.5);">
+        <h3 style="margin-top: 0; font-size: 1.25rem;">
+            <span class="lang-en">Log Google Flow Credit Entry</span>
+            <span class="lang-ar">تسجيل رصيد Google Flow يدوياً</span>
+        </h3>
+        <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1.25rem;">
+            Explicit manual ledger recording. Zero unauthorized live API quota polling.
+        </p>
+
+        <form method="POST" action="/intelligence/flow-credits">
+            <input type="hidden" name="channel_id" value="{{ selected_channel_id }}">
+
+            <div style="margin-bottom: 1rem;">
+                <label style="display: block; font-weight: 500; margin-bottom: 0.35rem;">Transaction Type</label>
+                <select name="transaction_type" class="form-control" required>
+                    <option value="topup">Top-up (+ Credits Added / إضافة رصيد)</option>
+                    <option value="usage">Usage (- Credits Consumed / استهلاك لقطات)</option>
+                    <option value="adjustment">Adjustment (تسوية يدوية)</option>
+                </select>
+            </div>
+
+            <div style="margin-bottom: 1rem;">
+                <label style="display: block; font-weight: 500; margin-bottom: 0.35rem;">Credits Amount</label>
+                <input type="number" step="0.01" name="credits_amount" class="form-control" placeholder="e.g. 100.0 or -15.0" required>
+            </div>
+
+            <div style="margin-bottom: 1rem;">
+                <label style="display: block; font-weight: 500; margin-bottom: 0.35rem;">Operator Note / Reference</label>
+                <input type="text" name="operator_note" class="form-control" placeholder="e.g. Monthly allocation or Ep 03 takes">
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 1.5rem;">
+                <button type="button" class="btn btn-secondary" onclick="document.getElementById('credit-modal').style.display='none'">Cancel</button>
+                <button type="submit" class="btn btn-primary">Save Credit Entry</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal 2: Edit Cost Unit Rates -->
+<div id="cost-modal" class="modal" style="display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6);">
+    <div style="background: var(--bg-surface); max-width: 480px; margin: 8% auto; padding: 1.75rem; border-radius: 8px; border: 1px solid var(--border-color); box-shadow: 0 8px 24px rgba(0,0,0,0.5);">
+        <h3 style="margin-top: 0; font-size: 1.25rem;">
+            <span class="lang-en">Production Cost Unit Rates</span>
+            <span class="lang-ar">تعديل تسعير وحدات الإنتاج التقديرية</span>
+        </h3>
+        <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1.25rem;">
+            Unit rates used to calculate estimated costs. Default actual known cost remains $0.00.
+        </p>
+
+        <form method="POST" action="/intelligence/cost-config">
+            <input type="hidden" name="channel_id" value="{{ selected_channel_id }}">
+
+            <div style="margin-bottom: 1rem;">
+                <label style="display: block; font-weight: 500; margin-bottom: 0.35rem;">Cost Per Render Second</label>
+                <input type="number" step="0.0001" name="cost_per_render_second" class="form-control" value="{{ cost_info.unit_rates.cost_per_render_second or 0.0 }}" required>
+            </div>
+
+            <div style="margin-bottom: 1rem;">
+                <label style="display: block; font-weight: 500; margin-bottom: 0.35rem;">Cost Per Storage GB / Month</label>
+                <input type="number" step="0.001" name="cost_per_storage_gb_month" class="form-control" value="{{ cost_info.unit_rates.cost_per_storage_gb_month or 0.0 }}" required>
+            </div>
+
+            <div style="margin-bottom: 1rem;">
+                <label style="display: block; font-weight: 500; margin-bottom: 0.35rem;">Cost Per Flow Take</label>
+                <input type="number" step="0.01" name="cost_per_api_take" class="form-control" value="{{ cost_info.unit_rates.cost_per_api_take or 0.0 }}" required>
+            </div>
+
+            <div style="margin-bottom: 1rem;">
+                <label style="display: block; font-weight: 500; margin-bottom: 0.35rem;">Currency</label>
+                <input type="text" name="currency" class="form-control" value="{{ cost_info.currency or 'USD' }}" required>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 1.5rem;">
+                <button type="button" class="btn btn-secondary" onclick="document.getElementById('cost-modal').style.display='none'">Cancel</button>
+                <button type="submit" class="btn btn-primary">Save Cost Rates</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+window.onclick = function(event) {
+    var cModal = document.getElementById('credit-modal');
+    var costModal = document.getElementById('cost-modal');
+    if (event.target == cModal) cModal.style.display = "none";
+    if (event.target == costModal) costModal.style.display = "none";
+}
+</script>
+{% endblock %}

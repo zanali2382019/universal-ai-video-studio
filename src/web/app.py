@@ -28,6 +28,7 @@ from src.web.routes.batch import router as batch_router
 from src.web.routes.preview import router as preview_router
 from src.web.routes.monitor import router as monitor_router
 from src.web.routes.export_packages import router as export_packages_router
+from src.web.routes.intelligence import router as intelligence_router
 
 
 def create_app(
@@ -68,6 +69,7 @@ def create_app(
     app.include_router(preview_router)
     app.include_router(monitor_router)
     app.include_router(export_packages_router)
+    app.include_router(intelligence_router)
 
     @app.get("/health")
     async def health_check():

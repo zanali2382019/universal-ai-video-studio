@@ -68,6 +68,68 @@
     </div>
 </div>
 
+<!-- Production Intelligence Summary Banner (Task 3.17) -->
+<div class="card" style="margin-bottom: 1.5rem; background: linear-gradient(135deg, rgba(30, 41, 59, 0.7), rgba(15, 23, 42, 0.8)); border: 1px solid var(--border-color);">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1rem;">
+        <div style="display: flex; align-items: center; gap: 0.75rem;">
+            <span style="font-size: 1.5rem;">📊</span>
+            <div>
+                <h2 style="font-size: 1.15rem; font-weight: 600; margin: 0;">
+                    <span class="lang-en">Production Intelligence & Resource Footprint</span>
+                    <span class="lang-ar">ذكاء الإنتاج واستهلاك الموارد والتكاليف</span>
+                </h2>
+                <p style="color: var(--text-secondary); font-size: 0.85rem; margin: 0.2rem 0 0 0;">
+                    <span class="lang-en">Deterministic efficiency metrics, storage footprints, and manual Flow ledger tracking.</span>
+                    <span class="lang-ar">مؤشرات الكفاءة الحتمية، وحجم التخزين، وتتبع أرصدة Flow والتكاليف التقديرية.</span>
+                </p>
+            </div>
+        </div>
+        <a href="/intelligence" class="btn btn-primary btn-sm">
+            <span class="lang-en">View Full Intelligence &rarr;</span>
+            <span class="lang-ar">عرض تفاصيل ذكاء الإنتاج &larr;</span>
+        </a>
+    </div>
+
+    <div class="grid grid-4" style="gap: 1rem;">
+        <div style="background: var(--bg-surface); padding: 0.85rem 1rem; border-radius: 6px; border: 1px solid var(--border-color);">
+            <div style="font-size: 0.8rem; color: var(--text-secondary);">
+                <span class="lang-en">Channel Storage Footprint</span>
+                <span class="lang-ar">حجم التخزين الفعلي</span>
+            </div>
+            <div style="font-size: 1.25rem; font-weight: 700; margin-top: 0.25rem; color: var(--text-primary);">
+                {{ intel_summary.storage_human }}
+            </div>
+        </div>
+        <div style="background: var(--bg-surface); padding: 0.85rem 1rem; border-radius: 6px; border: 1px solid var(--border-color);">
+            <div style="font-size: 0.8rem; color: var(--text-secondary);">
+                <span class="lang-en">Render Success Rate</span>
+                <span class="lang-ar">نسبة نجاح الرندر</span>
+            </div>
+            <div style="font-size: 1.25rem; font-weight: 700; margin-top: 0.25rem; color: #10b981;">
+                {{ intel_summary.success_rate }}%
+            </div>
+        </div>
+        <div style="background: var(--bg-surface); padding: 0.85rem 1rem; border-radius: 6px; border: 1px solid var(--border-color);">
+            <div style="font-size: 0.8rem; color: var(--text-secondary);">
+                <span class="lang-en">Flow Credit Balance (Manual)</span>
+                <span class="lang-ar">رصيد Flow المتبقي (يدوي)</span>
+            </div>
+            <div style="font-size: 1.25rem; font-weight: 700; margin-top: 0.25rem; color: #3b82f6;">
+                {{ intel_summary.flow_credits }}
+            </div>
+        </div>
+        <div style="background: var(--bg-surface); padding: 0.85rem 1rem; border-radius: 6px; border: 1px solid var(--border-color);">
+            <div style="font-size: 0.8rem; color: var(--text-secondary);">
+                <span class="lang-en">Estimated Unit Cost</span>
+                <span class="lang-ar">التكلفة التقديرية</span>
+            </div>
+            <div style="font-size: 1.25rem; font-weight: 700; margin-top: 0.25rem; color: #f59e0b;">
+                {{ intel_summary.estimated_cost }}
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Projects Flow Progress Table -->
 <div class="card" style="margin-bottom: 1.5rem;">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">

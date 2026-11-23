@@ -19,6 +19,7 @@ from src.database.repositories.flow_prompt_repository import FlowPromptRepositor
 from src.database.repositories.batch_repository import BatchRepository
 from src.database.repositories.task_repository import TaskRepository
 from src.database.repositories.export_repository import ExportRepository
+from src.database.repositories.intelligence_repository import IntelligenceRepository
 
 from src.storage.service import StorageService
 from src.services.channel_service import ChannelService
@@ -31,6 +32,7 @@ from src.services.task_service import TaskService
 from src.services.batch_service import BatchService
 from src.services.render_service import RenderService
 from src.services.export_service import ExportService
+from src.services.intelligence_service import IntelligenceService
 from src.creative.channel_profile_service import ChannelProfileService
 from src.creative.character_bible_service import CharacterBibleService
 from src.creative.rules_engine import CreativeRulesEngine
@@ -59,6 +61,7 @@ class ServiceContainer:
         self.batch_repo = BatchRepository(self.db)
         self.task_repo = TaskRepository(self.db)
         self.export_repo = ExportRepository(self.db)
+        self.intelligence_repo = IntelligenceRepository(self.db)
 
         # Core Domain Services
         self.audit_service = AuditService(self.audit_repo)
@@ -101,6 +104,19 @@ class ServiceContainer:
             project_repository=self.project_repo,
             scene_repository=self.scene_repo,
             channel_repository=self.channel_repo,
+        )
+        self.intelligence_service = IntelligenceService(
+            db_manager=self.db,
+            storage_service=self.storage,
+            intelligence_repository=self.intelligence_repo,
+            channel_repository=self.channel_repo,
+            project_repository=self.project_repo,
+            task_repository=self.task_repo,
+            flow_inbound_repo=self.flow_inbound_repo,
+            export_repository=self.export_repo,
+            asset_repository=self.asset_repo,
+            scene_repository=self.scene_repo,
+            audit_service=self.audit_service,
         )
 
         # Creative & Flow Services

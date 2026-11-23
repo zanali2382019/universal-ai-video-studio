@@ -218,6 +218,7 @@ class FFmpegResult:
     stdout: str
     stderr: str
     duration_sec: float
+    pid: Optional[int] = None
 
     @property
     def is_success(self) -> bool:
@@ -398,6 +399,7 @@ class FFmpegWrapper:
             stdout=stdout,
             stderr=stderr,
             duration_sec=elapsed,
+            pid=proc.pid,
         )
 
         if check and proc.returncode != 0:

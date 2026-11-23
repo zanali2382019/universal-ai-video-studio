@@ -639,7 +639,8 @@ class ExportPackageModel(BaseModel):
     zip_sha256: Optional[str] = None
     license_preflight: Dict[str, Any] = Field(default_factory=dict)
     quality_gates: Dict[str, Any] = Field(default_factory=dict)
-    metadata: Dict[str, Any] = Field(default_factory=dict)    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    metadata: Dict[str, Any] = Field(default_factory=dict)
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
     updated_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
     @classmethod
@@ -680,3 +681,56 @@ class ExportPackageCreate(BaseModel):
     license_preflight: Dict[str, Any] = Field(default_factory=dict)
     quality_gates: Dict[str, Any] = Field(default_factory=dict)
     metadata: Dict[str, Any] = Field(default_factory=dict)
+
+
+class FlowCreditTransactionModel(BaseModel):
+    """Model representing a Google Flow credit transaction (Task 3.17)."""
+    id: str
+    channel_id: str
+    project_id: Optional[str] = None
+    transaction_type: str  # topup, usage, adjustment
+    credits_amount: float
+    balance_after: float
+    task_id: Optional[str] = None
+    operator_note: Optional[str] = None
+    source: str = "manual_user_entry"
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+    @classmethod
+    def from_row(cls, row: Any) -> "FlowCreditTransactionModel":
+        return cls(**dict(row))
+
+
+class FlowCreditTransactionCreate(BaseModel):
+    """Payload to record a new Google Flow credit transaction."""
+    id: Optional[str] = None
+    channel_id: str
+    project_id: Optional[str] = None
+    transaction_type: str = "topup"
+    credits_amount: float
+    task_id: Optional[str] = None
+    operator_note: Optional[str] = None
+    source: str = "manual_user_entry"
+
+
+class ProductionCostConfigModel(BaseModel):
+    """Model representing production cost parameters per channel (Task 3.17)."""
+    id: str
+    channel_id: str
+    cost_per_render_second: float = 0.0
+    cost_per_storage_gb_month: float = 0.0
+    cost_per_api_take: float = 0.0
+    currency: str = "USD"
+    updated_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+    @classmethod
+    def from_row(cls, row: Any) -> "ProductionCostConfigModel":
+        return cls(**dict(row))
+
+
+class ProductionCostConfigUpdate(BaseModel):
+    """Payload to update production cost unit rates."""
+    cost_per_render_second: Optional[float] = None
+    cost_per_storage_gb_month: Optional[float] = None
+    cost_per_api_take: Optional[float] = None
+    currency: Optional[str] = None

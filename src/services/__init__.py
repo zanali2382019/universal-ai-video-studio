@@ -5,6 +5,7 @@ from src.services.scene_service import SceneService
 from src.services.asset_service import AssetService
 from src.services.license_service import LicenseService
 from src.services.audit_service import AuditService
+from src.services.intelligence_service import IntelligenceService, TaskResourceMonitor
 
 __all__ = [
     "ChannelService",
@@ -13,4 +14,6 @@ __all__ = [
     "AssetService",
     "LicenseService",
     "AuditService",
+    "IntelligenceService",
+    "TaskResourceMonitor",
 ]

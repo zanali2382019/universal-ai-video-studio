@@ -446,6 +446,41 @@ MIGRATIONS: List[Tuple[int, str, str]] = [
         CREATE INDEX IF NOT EXISTS idx_export_packages_status ON export_packages(status);
         """,
     ),
+    (
+        9,
+        "009_task_3_17_production_intelligence",
+        """
+        -- Google Flow Credit Ledger (Task 3.17: Manual Resource Tracking)
+        CREATE TABLE IF NOT EXISTS flow_credit_ledger (
+            id TEXT PRIMARY KEY,
+            channel_id TEXT NOT NULL REFERENCES channels(id) ON DELETE CASCADE,
+            project_id TEXT REFERENCES projects(id) ON DELETE SET NULL,
+            transaction_type TEXT NOT NULL,
+            credits_amount REAL NOT NULL,
+            balance_after REAL NOT NULL,
+            task_id TEXT REFERENCES tasks(id) ON DELETE SET NULL,
+            operator_note TEXT,
+            source TEXT NOT NULL DEFAULT 'manual_user_entry',
+            created_at TEXT NOT NULL
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_flow_credits_chan ON flow_credit_ledger(channel_id, created_at DESC);
+        CREATE INDEX IF NOT EXISTS idx_flow_credits_proj ON flow_credit_ledger(project_id);
+
+        -- Production Cost Configurations (Task 3.17: Unit Rates per Channel)
+        CREATE TABLE IF NOT EXISTS production_cost_configurations (
+            id TEXT PRIMARY KEY,
+            channel_id TEXT NOT NULL UNIQUE REFERENCES channels(id) ON DELETE CASCADE,
+            cost_per_render_second REAL NOT NULL DEFAULT 0.0,
+            cost_per_storage_gb_month REAL NOT NULL DEFAULT 0.0,
+            cost_per_api_take REAL NOT NULL DEFAULT 0.0,
+            currency TEXT NOT NULL DEFAULT 'USD',
+            updated_at TEXT NOT NULL
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_cost_config_chan ON production_cost_configurations(channel_id);
+        """,
+    ),
 ]
 
 
