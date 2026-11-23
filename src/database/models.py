@@ -576,3 +576,46 @@ class TaskCheckpointCreate(BaseModel):
     execution_token: int
 
 
+class BatchJobModel(BaseModel):
+    """Model representing a batch production job (Task 3.15b)."""
+    id: str
+    channel_id: str
+    name: str
+    status: str = Field(default="queued", description="queued, running, completed, partial_failure, failed, cancelled")
+    total_items: int = 0
+    completed_items: int = 0
+    failed_items: int = 0
+    task_ids: List[str] = Field(default_factory=list)
+    metadata: Dict[str, Any] = Field(default_factory=dict)
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    updated_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+    @classmethod
+    def from_row(cls, row: Any) -> "BatchJobModel":
+        data = dict(row)
+        if isinstance(data.get("task_ids_json"), str):
+            try:
+                data["task_ids"] = json.loads(data["task_ids_json"])
+            except Exception:
+                data["task_ids"] = []
+        elif "task_ids" not in data:
+            data["task_ids"] = []
+
+        if isinstance(data.get("metadata_json"), str):
+            try:
+                data["metadata"] = json.loads(data["metadata_json"])
+            except Exception:
+                data["metadata"] = {}
+        elif "metadata" not in data:
+            data["metadata"] = {}
+
+        return cls(**data)
+
+
+class BatchJobCreate(BaseModel):
+    """Payload to create a new batch production job."""
+    id: Optional[str] = None
+    channel_id: str
+    name: str
+    task_ids: List[str] = Field(default_factory=list)
+    metadata: Dict[str, Any] = Field(default_factory=dict)

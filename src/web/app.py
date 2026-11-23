@@ -23,6 +23,10 @@ from src.web.routes.characters import router as characters_router
 from src.web.routes.flow_outbound import router as flow_outbound_router
 from src.web.routes.flow_inbound import router as flow_inbound_router
 from src.web.routes.assets import router as assets_router
+from src.web.routes.render_queue import router as render_queue_router
+from src.web.routes.batch import router as batch_router
+from src.web.routes.preview import router as preview_router
+from src.web.routes.monitor import router as monitor_router
 
 
 def create_app(
@@ -58,6 +62,10 @@ def create_app(
     app.include_router(flow_outbound_router)
     app.include_router(flow_inbound_router)
     app.include_router(assets_router)
+    app.include_router(render_queue_router)
+    app.include_router(batch_router)
+    app.include_router(preview_router)
+    app.include_router(monitor_router)
 
     @app.get("/health")
     async def health_check():

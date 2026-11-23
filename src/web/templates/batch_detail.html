@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+
+{% block title %}Batch {{ batch.id }} - Universal AI Video Studio{% endblock %}
+
+{% block content %}
+<div class="card" style="margin-bottom: 1.5rem;">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+        <div>
+            <div style="margin-bottom: 0.25rem;">
+                <a href="/batch" style="color: var(--text-secondary); text-decoration: none;">← Back to Batch Jobs / العودة للدفعات</a>
+            </div>
+            <h1 style="font-size: 1.75rem; font-weight: 700; margin: 0;">
+                <span>{{ batch.name }}</span>
+                <span style="font-family: monospace; font-size: 1rem; color: var(--text-secondary); font-weight: normal;">({{ batch.id }})</span>
+            </h1>
+            <p style="color: var(--text-secondary); margin-top: 0.25rem;">
+                Channel: <strong>{{ batch.channel_id }}</strong> | Created: {{ batch.created_at[:19].replace('T', ' ') if batch.created_at else '' }}
+            </p>
+        </div>
+        <div>
+            {% if batch.status == 'completed' %}
+            <span class="badge badge-success" style="font-size: 1rem; padding: 0.5rem 1rem;">✓ Completed</span>
+            {% elif batch.status == 'running' %}
+            <span class="badge badge-primary" style="font-size: 1rem; padding: 0.5rem 1rem;">⚙ Running</span>
+            {% elif batch.status == 'partial_failure' %}
+            <span class="badge badge-warning" style="font-size: 1rem; padding: 0.5rem 1rem;">⚠ Partial Failure</span>
+            {% elif batch.status == 'failed' %}
+            <span class="badge badge-danger" style="font-size: 1rem; padding: 0.5rem 1rem;">✕ Failed</span>
+            {% elif batch.status == 'queued' %}
+            <span class="badge badge-warning" style="font-size: 1rem; padding: 0.5rem 1rem;">⏳ Queued</span>
+            {% else %}
+            <span class="badge badge-secondary" style="font-size: 1rem; padding: 0.5rem 1rem;">{{ batch.status }}</span>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{% if success_msg %}
+<div class="alert alert-success" style="margin-bottom: 1.5rem;">
+    <span>✓</span> <span>{{ success_msg }}</span>
+</div>
+{% endif %}
+
+<!-- Aggregate Progress -->
+<div class="card" style="margin-bottom: 1.5rem;">
+    <h2 style="font-size: 1.15rem; font-weight: 600; margin-top: 0; margin-bottom: 0.75rem;">
+        Aggregate Production Progress ({{ batch.progress_percent }}%)
+    </h2>
+    <div style="background: var(--bg-secondary); border-radius: 6px; height: 16px; overflow: hidden; margin-bottom: 0.75rem;">
+        <div style="background: var(--primary-color); height: 100%; width: {{ batch.progress_percent }}%; transition: width 0.3s ease;"></div>
+    </div>
+    <div style="display: flex; gap: 2rem; font-size: 0.9rem;">
+        <div>Total: <strong>{{ batch.total_items }}</strong></div>
+        <div style="color: #10b981;">Completed: <strong>{{ batch.completed_items }}</strong></div>
+        <div style="color: #3b82f6;">Running: <strong>{{ batch.running_items }}</strong></div>
+        <div style="color: #f59e0b;">Queued: <strong>{{ batch.queued_items }}</strong></div>
+        {% if batch.failed_items > 0 %}
+        <div style="color: #ef4444;">Failed: <strong>{{ batch.failed_items }}</strong></div>
+        {% endif %}
+        {% if batch.cancelled_items > 0 %}
+        <div style="color: #6b7280;">Cancelled: <strong>{{ batch.cancelled_items }}</strong></div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Items Table -->
+<div class="card">
+    <h2 style="font-size: 1.15rem; font-weight: 600; margin-top: 0; margin-bottom: 1rem;">
+        Batch Items & Individual Task Execution
+    </h2>
+
+    <div style="overflow-x: auto;">
+        <table class="table" style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="border-bottom: 1px solid var(--border-color); text-align: start;">
+                    <th style="padding: 0.75rem;">#</th>
+                    <th style="padding: 0.75rem;">Task ID</th>
+                    <th style="padding: 0.75rem;">Project</th>
+                    <th style="padding: 0.75rem;">Status</th>
+                    <th style="padding: 0.75rem;">Progress</th>
+                    <th style="padding: 0.75rem;">Error / Diagnostic</th>
+                    <th style="padding: 0.75rem;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for t in batch.tasks %}
+                <tr style="border-bottom: 1px solid var(--border-color);">
+                    <td style="padding: 0.75rem;">{{ loop.index }}</td>
+                    <td style="padding: 0.75rem; font-family: monospace; font-size: 0.85rem;">
+                        <a href="/monitor?task_id={{ t.task_id }}">{{ t.task_id }}</a>
+                    </td>
+                    <td style="padding: 0.75rem;"><strong>{{ t.project_id or '—' }}</strong></td>
+                    <td style="padding: 0.75rem;">
+                        {% if t.status == 'completed' %}
+                        <span class="badge badge-success">✓ Completed</span>
+                        {% elif t.status == 'running' %}
+                        <span class="badge badge-primary">⚙ Running</span>
+                        {% elif t.status == 'queued' %}
+                        <span class="badge badge-warning">⏳ Queued</span>
+                        {% elif t.status == 'failed' %}
+                        <span class="badge badge-danger">✕ Failed</span>
+                        {% elif t.status == 'cancelled' %}
+                        <span class="badge badge-secondary">🚫 Cancelled</span>
+                        {% else %}
+                        <span class="badge badge-secondary">{{ t.status }}</span>
+                        {% endif %}
+                    </td>
+                    <td style="padding: 0.75rem;">{{ t.progress_percent }}%</td>
+                    <td style="padding: 0.75rem; font-size: 0.8rem; color: #ef4444;">
+                        {{ t.error_message or '—' }}
+                    </td>
+                    <td style="padding: 0.75rem;">
+                        {% if t.status == 'completed' %}
+                        <a href="/preview?task_id={{ t.task_id }}" class="btn btn-sm btn-primary">▶ Preview</a>
+                        {% elif t.status in ('failed', 'cancelled') %}
+                        <form method="POST" action="/render-queue/{{ t.task_id }}/retry" style="display: inline;">
+                            <button type="submit" class="btn btn-sm btn-secondary">↻ Retry</button>
+                        </form>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

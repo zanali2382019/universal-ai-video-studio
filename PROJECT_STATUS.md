@@ -1,9 +1,9 @@
 # حالة المشروع ومراحل الإنجاز (PROJECT STATUS)
 ## مشروع: Universal AI Video Production Studio
 
-**تاريخ التحديث الأخير:** 21 نوفمبر 2026
+**تاريخ التحديث الأخير:** 23 نوفمبر 2026
 **المرحلة الحالية:** المرحلة الثالثة: تطوير النواة البرمجية والتكامل (Phase 3: Core Engine Development & Integration)
-**الحالة التشغيلية العامة:** 🟢 **تم إنتاج وتصدير واعتماد الحلقة الثالثة (Episode 03) لقناة DreamMatter بنجاح 100% عبر خط الإنتاج المتكامل الفعلي؛ تم التحقق من سلامة كافة الأصول وتراخيصها، ومطابقة معايير الصوت والفيديو EBU R128، مع الحفاظ الكامل على الحلقتين 01 و 02 دون أي انحدار.**
+**الحالة التشغيلية العامة:** 🟢 **تم إنجاز واجهة الاستوديو المحلية بالكامل (Task 3.15a و Task 3.15b) على المنفذ 8050 مع استكمال طابور الرندر، الإنتاج بالدفعات، مشغل الفيديو بتدفق النطاقات الجزئية 206، وشاشة المراقبة اللحظية؛ تطبيق Migration 7 واجتياز 242 اختباراً بنسبة 100% (229 محمولة + 13 إنتاج) دون أي انحدار.**
 
 ---
 
@@ -81,4 +81,7 @@
   * وثيقة القرار المعماري: [`docs/ADR-013_Local_WebUI_Studio_Interface.md`](file:///E:/AI-Projects/universal-ai-video-studio/docs/ADR-013_Local_WebUI_Studio_Interface.md).
   * مشغّل الواجهة المحلي: [`scripts/run_studio_web.py`](file:///E:/AI-Projects/universal-ai-video-studio/scripts/run_studio_web.py).
   * جناح اختبارات الواجهة: [`tests/test_task_315a_studio_gui.py`](file:///E:/AI-Projects/universal-ai-video-studio/tests/test_task_315a_studio_gui.py).
-- [ ] **Task 3.15b: واجهة طابور الإنتاج والدفعات والمعاينة المباشرة (Production Queue, Batch Runner & Live Video Preview GUI):** (المهمة القادمة — تتطلب موافقة المستخدم الصريحة للبدء وفق خارطة الطريق).
+- [x] **Task 3.15b: واجهة طابور الإنتاج والدفعات والمعاينة المباشرة والمراقبة (Studio GUI — Render Queue, Batch Production, Video Preview & Monitoring):** (مكتملة ومختبرة ومطابقة بنسبة 100% — تم استكمال واجهة الاستوديو بإضافة طابور الرندر الفعلي `/render-queue` مع خيارات المعاينة الداخلية والتصدير النهائي الخاضع لبوابة ADR-008، ونسب الأبعاد 9:16 و 16:9 و 1:1، وأوضاع الملاءمة والانتقالات والترجمة؛ بناء منظومة الإنتاج بالدفعات `/batch` عبر كينونة `batch_jobs` وهجرة قاعدة البيانات Migration 7 مع عزل الأخطاء وتتبع التقدم التراكمي؛ بناء محرك مشغل الفيديو ومعاينة المخرجات `/preview` المدعوم بتقنية التدفق الجزئي عبر HTTP Range Requests (200, 206, 416) مع الإغلاق الآمن للمقابض على Windows ومنع اختراق المسارات Path Traversal؛ بناء شاشة المراقبة اللحظية `/monitor` لعرض مراحل المعالجة وCache Hits وقياسات الصوت الفعلية LUFS وTrue Peak دون قيم وهمية؛ الحفاظ على الصفر المطلق لاستيراد sqlite3 المباشر داخل `src/web/` عبر فحص AST الصارم؛ 8 اختبارات تكاملية جديدة واجتياز 242 اختباراً إجمالياً بنجاح 100% — 229 اختباراً محمولاً + 13 اختبار قبول إنتاج محلي).
+  * جناح اختبارات الرندر والدفعات والمراقبة: [`tests/test_task_315b_render_gui.py`](file:///E:/AI-Projects/universal-ai-video-studio/tests/test_task_315b_render_gui.py).
+  * برنامج القبول الآلي التكاملي: [`scripts/verify_render_acceptance.py`](file:///E:/AI-Projects/universal-ai-video-studio/scripts/verify_render_acceptance.py).
+- [ ] **Task 3.16: التجهيز النهائي للتصدير والنشر (Export & Publishing Preparation):** (المهمة القادمة — تتطلب موافقة المستخدم الصريحة للبدء وفق خارطة الطريق).

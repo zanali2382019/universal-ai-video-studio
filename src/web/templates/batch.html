@@ -1,0 +1,228 @@
+{% extends "base.html" %}
+
+{% block title %}Batch Production - Universal AI Video Studio{% endblock %}
+
+{% block content %}
+<div class="card" style="margin-bottom: 1.5rem;">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+        <div>
+            <h1 style="font-size: 1.75rem; font-weight: 700; margin: 0;">
+                <span class="lang-en">Batch Production</span>
+                <span class="lang-ar">الإنتاج بالدفعات (Batch Production)</span>
+            </h1>
+            <p style="color: var(--text-secondary); margin-top: 0.25rem;">
+                <span class="lang-en">Render multiple projects and episodes in parallel batches with worker pooling and error isolation.</span>
+                <span class="lang-ar">إنتاج وتصدير مجموعات من المشاريع والحلقات دفعة واحدة مع عزل الأخطاء وتتبع الإنجاز الإجمالي.</span>
+            </p>
+        </div>
+        <div>
+            <button type="button" class="btn btn-primary" onclick="document.getElementById('create-batch-modal').style.display='block'">
+                <span class="lang-en">+ Create Batch Job</span>
+                <span class="lang-ar">+ إنشاء دفعة إنتاج جديدة</span>
+            </button>
+        </div>
+    </div>
+</div>
+
+{% if error_msg %}
+<div class="alert alert-danger" style="margin-bottom: 1.5rem;">
+    <span>⚠</span> <span>{{ error_msg }}</span>
+</div>
+{% endif %}
+
+{% if success_msg %}
+<div class="alert alert-success" style="margin-bottom: 1.5rem;">
+    <span>✓</span> <span>{{ success_msg }}</span>
+</div>
+{% endif %}
+
+<!-- Batches Table -->
+<div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <h2 style="font-size: 1.25rem; font-weight: 600; margin: 0;">
+            <span class="lang-en">Batch Jobs ({{ batches|length }})</span>
+            <span class="lang-ar">دفعات الإنتاج ({{ batches|length }})</span>
+        </h2>
+    </div>
+
+    {% if batches %}
+    <div style="overflow-x: auto;">
+        <table class="table" style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="border-bottom: 1px solid var(--border-color); text-align: start;">
+                    <th style="padding: 0.75rem;">Batch ID</th>
+                    <th style="padding: 0.75rem;">Batch Name & Channel</th>
+                    <th style="padding: 0.75rem;">Status</th>
+                    <th style="padding: 0.75rem;">Progress</th>
+                    <th style="padding: 0.75rem;">Items (Comp / Total)</th>
+                    <th style="padding: 0.75rem;">Created At</th>
+                    <th style="padding: 0.75rem;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for b in batches %}
+                <tr style="border-bottom: 1px solid var(--border-color);">
+                    <td style="padding: 0.75rem; font-family: monospace; font-size: 0.85rem;">
+                        <a href="/batch/{{ b.id }}"><strong>{{ b.id }}</strong></a>
+                    </td>
+                    <td style="padding: 0.75rem;">
+                        <div><strong>{{ b.name }}</strong></div>
+                        <div style="font-size: 0.8rem; color: var(--text-secondary);">{{ b.channel_id }}</div>
+                    </td>
+                    <td style="padding: 0.75rem;">
+                        {% if b.status == 'completed' %}
+                        <span class="badge badge-success">✓ Completed</span>
+                        {% elif b.status == 'running' %}
+                        <span class="badge badge-primary">⚙ Running</span>
+                        {% elif b.status == 'partial_failure' %}
+                        <span class="badge badge-warning">⚠ Partial Failure</span>
+                        {% elif b.status == 'failed' %}
+                        <span class="badge badge-danger">✕ Failed</span>
+                        {% elif b.status == 'queued' %}
+                        <span class="badge badge-warning">⏳ Queued</span>
+                        {% else %}
+                        <span class="badge badge-secondary">{{ b.status }}</span>
+                        {% endif %}
+                    </td>
+                    <td style="padding: 0.75rem; min-width: 160px;">
+                        <div style="background: var(--bg-secondary); border-radius: 4px; height: 8px; margin-top: 4px; overflow: hidden;">
+                            <div style="background: var(--primary-color); height: 100%; width: {{ b.progress_percent }}%;"></div>
+                        </div>
+                        <span style="font-size: 0.75rem; color: var(--text-secondary);">{{ b.progress_percent }}%</span>
+                    </td>
+                    <td style="padding: 0.75rem;">
+                        <span style="font-weight: 600; color: #10b981;">{{ b.completed_items }}</span> /
+                        <span>{{ b.total_items }}</span>
+                        {% if b.failed_items > 0 %}
+                        <span style="color: #ef4444; font-size: 0.8rem;">({{ b.failed_items }} failed)</span>
+                        {% endif %}
+                    </td>
+                    <td style="padding: 0.75rem; font-size: 0.8rem; color: var(--text-secondary);">
+                        {{ b.created_at[:19].replace('T', ' ') if b.created_at else '—' }}
+                    </td>
+                    <td style="padding: 0.75rem;">
+                        <a href="/batch/{{ b.id }}" class="btn btn-sm btn-secondary">Details</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div style="text-align: center; padding: 2rem; color: var(--text-secondary);">
+        <p>No batch jobs found. Click <strong>+ Create Batch Job</strong> to assemble multi-project render pipelines.</p>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Create Batch Job Modal -->
+<div id="create-batch-modal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); z-index: 1000; padding: 2rem; overflow-y: auto;">
+    <div class="card" style="max-width: 700px; margin: 2rem auto; background: var(--bg-card);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+            <h2 style="font-size: 1.35rem; font-weight: 700; margin: 0;">
+                <span class="lang-en">Create Batch Production Job</span>
+                <span class="lang-ar">إنشاء دفعة إنتاج جديدة</span>
+            </h2>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('create-batch-modal').style.display='none'">✕</button>
+        </div>
+
+        <form method="POST" action="/batch/create">
+            <div style="margin-bottom: 1rem;">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Channel / القناة *</label>
+                <select name="channel_id" id="batch-channel-select" class="form-control" required onchange="filterBatchProjects(this.value)">
+                    <option value="">-- Select Channel --</option>
+                    {% for ch in channels %}
+                    <option value="{{ ch.id }}">{{ ch.name }} ({{ ch.id }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div style="margin-bottom: 1rem;">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Batch Title / عنوان الدفعة *</label>
+                <input type="text" name="name" class="form-control" placeholder="e.g. Episode 01-03 Social Cut Batch" required>
+            </div>
+
+            <div style="margin-bottom: 1rem;">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Select Projects / اختر المشاريع والحلقات *</label>
+                <div id="projects-checkbox-container" style="max-height: 180px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 6px; padding: 0.75rem;">
+                    {% for p in projects %}
+                    <label class="batch-proj-item" data-channel="{{ p.channel_id }}" style="display: block; margin-bottom: 0.5rem; cursor: pointer;">
+                        <input type="checkbox" name="project_ids" value="{{ p.id }}">
+                        <span style="font-weight: 500;">{{ p.title }}</span>
+                        <span style="font-size: 0.8rem; color: var(--text-secondary);">({{ p.id }})</span>
+                    </label>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                <div>
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Mode / النمط</label>
+                    <select name="mode" class="form-control">
+                        <option value="preview">Internal Preview</option>
+                        <option value="export">Commercial Export (ADR-008 Gate)</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Aspect Ratio / نسبة الأبعاد</label>
+                    <select name="aspect_ratio" class="form-control">
+                        <option value="9:16">Vertical 9:16</option>
+                        <option value="16:9">Horizontal 16:9</option>
+                        <option value="1:1">Square 1:1</option>
+                    </select>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                <div>
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Aspect Mode</label>
+                    <select name="aspect_mode" class="form-control">
+                        <option value="cover">cover</option>
+                        <option value="contain">contain</option>
+                        <option value="blur_pad">blur_pad</option>
+                        <option value="fit">fit</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Transition</label>
+                    <select name="transition" class="form-control">
+                        <option value="fade">fade</option>
+                        <option value="crossfade">crossfade</option>
+                        <option value="cut">cut</option>
+                    </select>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 1.5rem;">
+                <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                    <input type="checkbox" name="burn_subtitles" value="true" checked>
+                    <span>Burn Subtitles into Videos</span>
+                </label>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 0.5rem;">
+                <button type="button" class="btn btn-secondary" onclick="document.getElementById('create-batch-modal').style.display='none'">Cancel</button>
+                <button type="submit" class="btn btn-primary">Start Batch</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function filterBatchProjects(channelId) {
+    const items = document.querySelectorAll('.batch-proj-item');
+    items.forEach(it => {
+        const ch = it.getAttribute('data-channel');
+        if (!channelId || ch === channelId) {
+            it.style.display = 'block';
+        } else {
+            it.style.display = 'none';
+            const cb = it.querySelector('input[type="checkbox"]');
+            if (cb) cb.checked = false;
+        }
+    });
+}
+</script>
+{% endblock %}

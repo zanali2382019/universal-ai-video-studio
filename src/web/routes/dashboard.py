@@ -79,12 +79,35 @@ async def dashboard_view(
         except Exception:
             pass
 
+    # Render & Batch stats
+    active_renders_count = 0
+    completed_renders_count = 0
+    try:
+        all_renders = services.render_service.list_renders()
+        for r in all_renders:
+            if r.get("status") in ("queued", "running", "pending"):
+                active_renders_count += 1
+            elif r.get("status") == "completed":
+                completed_renders_count += 1
+    except Exception:
+        pass
+
+    batch_jobs_count = 0
+    try:
+        batches = services.batch_service.list_batches()
+        batch_jobs_count = len(batches)
+    except Exception:
+        pass
+
     stats = {
         "channel_count": len(channels),
         "project_count": len(all_projects),
         "scene_count": total_scenes_count,
         "active_takes_count": total_active_takes_count,
         "asset_count": len(all_assets),
+        "active_renders_count": active_renders_count,
+        "completed_renders_count": completed_renders_count,
+        "batch_jobs_count": batch_jobs_count,
     }
 
     return templates.TemplateResponse(

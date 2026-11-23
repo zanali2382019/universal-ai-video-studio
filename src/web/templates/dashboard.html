@@ -15,14 +15,22 @@
                 <span class="lang-ar">نظرة عامة على القنوات، ومشاريع الإنتاج، ونسب إنجاز لقطات Google Flow.</span>
             </p>
         </div>
-        <div style="display: flex; gap: 0.5rem;">
-            <a href="/projects" class="btn btn-primary">
+        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+            <a href="/render-queue" class="btn btn-primary">
+                <span class="lang-en">⏳ Render Queue</span>
+                <span class="lang-ar">⏳ قائمة الرندر</span>
+            </a>
+            <a href="/batch" class="btn btn-secondary">
+                <span class="lang-en">📦 Batch Production</span>
+                <span class="lang-ar">📦 الإنتاج بالدفعات</span>
+            </a>
+            <a href="/preview" class="btn btn-secondary">
+                <span class="lang-en">👁️ Preview Player</span>
+                <span class="lang-ar">👁️ معاينة الفيديو</span>
+            </a>
+            <a href="/projects" class="btn btn-secondary">
                 <span class="lang-en">+ New Project</span>
                 <span class="lang-ar">+ مشروع جديد</span>
-            </a>
-            <a href="/channels" class="btn btn-secondary">
-                <span class="lang-en">Manage Channels</span>
-                <span class="lang-ar">إدارة القنوات</span>
             </a>
         </div>
     </div>
@@ -45,17 +53,17 @@
         </div>
     </div>
     <div class="metric-card">
-        <div class="metric-value">{{ stats.scene_count }}</div>
+        <div class="metric-value" style="color: #3b82f6;">{{ stats.active_renders_count }}</div>
         <div class="metric-label">
-            <span class="lang-en">Total Scenes</span>
-            <span class="lang-ar">إجمالي المشاهد</span>
+            <span class="lang-en">Active Render Tasks</span>
+            <span class="lang-ar">مهام الرندر النشطة</span>
         </div>
     </div>
     <div class="metric-card">
-        <div class="metric-value" style="color: #10b981;">{{ stats.active_takes_count }}</div>
+        <div class="metric-value" style="color: #10b981;">{{ stats.completed_renders_count }}</div>
         <div class="metric-label">
-            <span class="lang-en">Active Flow Takes</span>
-            <span class="lang-ar">اللقطات النشطة (Flow)</span>
+            <span class="lang-en">Completed Videos</span>
+            <span class="lang-ar">الفيديوهات المكتملة</span>
         </div>
     </div>
 </div>

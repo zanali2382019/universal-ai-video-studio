@@ -391,6 +391,29 @@ MIGRATIONS: List[Tuple[int, str, str]] = [
         CREATE INDEX IF NOT EXISTS idx_flow_inbound_chan ON flow_inbound_records(channel_id);
         """,
     ),
+    (
+        7,
+        "007_task_3_15b_batch_jobs",
+        """
+        -- Batch Jobs Table (Task 3.15b: Studio GUI Batch Production)
+        CREATE TABLE IF NOT EXISTS batch_jobs (
+            id TEXT PRIMARY KEY,
+            channel_id TEXT NOT NULL REFERENCES channels(id) ON DELETE CASCADE,
+            name TEXT NOT NULL,
+            status TEXT NOT NULL DEFAULT 'queued',
+            total_items INTEGER NOT NULL DEFAULT 0,
+            completed_items INTEGER NOT NULL DEFAULT 0,
+            failed_items INTEGER NOT NULL DEFAULT 0,
+            task_ids_json TEXT NOT NULL DEFAULT '[]',
+            metadata_json TEXT NOT NULL DEFAULT '{}',
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_batch_jobs_channel ON batch_jobs(channel_id, created_at DESC);
+        CREATE INDEX IF NOT EXISTS idx_batch_jobs_status ON batch_jobs(status);
+        """,
+    ),
 ]
 
 

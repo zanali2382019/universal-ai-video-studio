@@ -1,0 +1,293 @@
+{% extends "base.html" %}
+
+{% block title %}Render Queue - Universal AI Video Studio{% endblock %}
+
+{% block content %}
+<div class="card" style="margin-bottom: 1.5rem;">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+        <div>
+            <h1 style="font-size: 1.75rem; font-weight: 700; margin: 0;">
+                <span class="lang-en">Video Render Queue</span>
+                <span class="lang-ar">طابور مهام الرندر ومعالجة الفيديو</span>
+            </h1>
+            <p style="color: var(--text-secondary); margin-top: 0.25rem;">
+                <span class="lang-en">Dispatch and monitor multi-profile project rendering, manage retry/cancellation lifecycles, and enforce ADR-008 gates.</span>
+                <span class="lang-ar">إرسال ومتابعة رندر المشاريع بنسب أبعاد مختلفة، وإدارة دورة حياة المهام وبوابات التراخيص.</span>
+            </p>
+        </div>
+        <div>
+            <button type="button" class="btn btn-primary" onclick="document.getElementById('dispatch-modal').style.display='block'">
+                <span class="lang-en">+ Dispatch New Render</span>
+                <span class="lang-ar">+ إرسال مهمة رندر جديدة</span>
+            </button>
+        </div>
+    </div>
+</div>
+
+{% if error_msg %}
+<div class="alert alert-danger" style="margin-bottom: 1.5rem;">
+    <span>⚠</span> <span>{{ error_msg }}</span>
+</div>
+{% endif %}
+
+{% if success_msg %}
+<div class="alert alert-success" style="margin-bottom: 1.5rem;">
+    <span>✓</span> <span>{{ success_msg }}</span>
+</div>
+{% endif %}
+
+<!-- Filters -->
+<div class="card" style="margin-bottom: 1.5rem;">
+    <form method="GET" action="/render-queue" style="display: flex; gap: 1rem; align-items: flex-end; flex-wrap: wrap;">
+        <div style="flex: 1; min-width: 200px;">
+            <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">
+                <span class="lang-en">Channel</span>
+                <span class="lang-ar">القناة</span>
+            </label>
+            <select name="channel_id" class="form-control" onchange="this.form.submit()">
+                <option value="">-- All Channels / جميع القنوات --</option>
+                {% for ch in channels %}
+                <option value="{{ ch.id }}" {% if selected_channel == ch.id %}selected{% endif %}>{{ ch.name }} ({{ ch.id }})</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div style="flex: 1; min-width: 200px;">
+            <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">
+                <span class="lang-en">Status Filter</span>
+                <span class="lang-ar">الحالة</span>
+            </label>
+            <select name="status" class="form-control" onchange="this.form.submit()">
+                <option value="">-- All Statuses / كافة الحالات --</option>
+                <option value="queued" {% if selected_status == 'queued' %}selected{% endif %}>Queued</option>
+                <option value="running" {% if selected_status == 'running' %}selected{% endif %}>Running</option>
+                <option value="completed" {% if selected_status == 'completed' %}selected{% endif %}>Completed</option>
+                <option value="failed" {% if selected_status == 'failed' %}selected{% endif %}>Failed</option>
+                <option value="cancelled" {% if selected_status == 'cancelled' %}selected{% endif %}>Cancelled</option>
+            </select>
+        </div>
+
+        <div>
+            <a href="/render-queue" class="btn btn-secondary">
+                <span class="lang-en">Reset</span>
+                <span class="lang-ar">إعادة تعيين</span>
+            </a>
+        </div>
+    </form>
+</div>
+
+<!-- Render Tasks Table -->
+<div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <h2 style="font-size: 1.25rem; font-weight: 600; margin: 0;">
+            <span class="lang-en">Render Tasks ({{ renders|length }})</span>
+            <span class="lang-ar">المهام في الطابور ({{ renders|length }})</span>
+        </h2>
+    </div>
+
+    {% if renders %}
+    <div style="overflow-x: auto;">
+        <table class="table" style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="border-bottom: 1px solid var(--border-color); text-align: start;">
+                    <th style="padding: 0.75rem;">Task ID</th>
+                    <th style="padding: 0.75rem;">Project & Channel</th>
+                    <th style="padding: 0.75rem;">Mode & Profile</th>
+                    <th style="padding: 0.75rem;">Status</th>
+                    <th style="padding: 0.75rem;">Phase & Progress</th>
+                    <th style="padding: 0.75rem;">Audio & Peak</th>
+                    <th style="padding: 0.75rem;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in renders %}
+                <tr style="border-bottom: 1px solid var(--border-color);">
+                    <td style="padding: 0.75rem; font-family: monospace; font-size: 0.85rem;">
+                        <a href="/monitor?task_id={{ r.task_id }}">{{ r.task_id }}</a>
+                    </td>
+                    <td style="padding: 0.75rem;">
+                        <strong>{{ r.project_id or 'N/A' }}</strong>
+                        <div style="font-size: 0.8rem; color: var(--text-secondary);">{{ r.channel_id }}</div>
+                    </td>
+                    <td style="padding: 0.75rem;">
+                        <span class="badge badge-secondary">{{ r.payload.mode|upper }}</span>
+                        <span class="badge badge-secondary">{{ r.payload.profile or r.payload.aspect_ratio }}</span>
+                    </td>
+                    <td style="padding: 0.75rem;">
+                        {% if r.status == 'completed' %}
+                        <span class="badge badge-success">✓ Completed</span>
+                        {% elif r.status == 'running' %}
+                        <span class="badge badge-primary">⚙ Running</span>
+                        {% elif r.status == 'queued' %}
+                        <span class="badge badge-warning">⏳ Queued</span>
+                        {% elif r.status == 'failed' %}
+                        <span class="badge badge-danger">✕ Failed</span>
+                        {% elif r.status == 'cancelled' %}
+                        <span class="badge badge-secondary">🚫 Cancelled</span>
+                        {% else %}
+                        <span class="badge badge-secondary">{{ r.status }}</span>
+                        {% endif %}
+                    </td>
+                    <td style="padding: 0.75rem; min-width: 160px;">
+                        <div style="font-size: 0.85rem; font-weight: 500;">{{ r.phase }}</div>
+                        <div style="background: var(--bg-secondary); border-radius: 4px; height: 8px; margin-top: 4px; overflow: hidden;">
+                            <div style="background: var(--primary-color); height: 100%; width: {{ r.progress_percent or (100 if r.status == 'completed' else 0) }}%;"></div>
+                        </div>
+                        <span style="font-size: 0.75rem; color: var(--text-secondary);">
+                            {% if r.is_indeterminate %}Indeterminate{% else %}{{ r.progress_percent }}%{% endif %}
+                            {% if r.cache_hit %}(Cache Hit){% endif %}
+                        </span>
+                    </td>
+                    <td style="padding: 0.75rem; font-size: 0.8rem;">
+                        {% if r.lufs is not none %}
+                        <div>LUFS: <strong>{{ "%.1f"|format(r.lufs) }}</strong></div>
+                        {% endif %}
+                        {% if r.true_peak is not none %}
+                        <div>Peak: <strong>{{ "%.2f"|format(r.true_peak) }} dBTP</strong></div>
+                        {% endif %}
+                        {% if r.lufs is none and r.true_peak is none %}
+                        <span style="color: var(--text-secondary);">—</span>
+                        {% endif %}
+                    </td>
+                    <td style="padding: 0.75rem;">
+                        <div style="display: flex; gap: 0.35rem; flex-wrap: wrap;">
+                            {% if r.status == 'completed' %}
+                            <a href="/preview?task_id={{ r.task_id }}" class="btn btn-sm btn-primary" title="Play Video">▶ Play</a>
+                            {% endif %}
+
+                            {% if r.status in ('failed', 'cancelled') %}
+                            <form method="POST" action="/render-queue/{{ r.task_id }}/retry" style="display: inline;">
+                                <button type="submit" class="btn btn-sm btn-secondary" title="Retry task">↻ Retry</button>
+                            </form>
+                            {% endif %}
+
+                            {% if r.status in ('queued', 'running', 'pending') %}
+                            <form method="POST" action="/render-queue/{{ r.task_id }}/cancel" style="display: inline;" onsubmit="return confirm('Cancel this render task?');">
+                                <button type="submit" class="btn btn-sm btn-danger" title="Cancel render">✕ Cancel</button>
+                            </form>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div style="text-align: center; padding: 2rem; color: var(--text-secondary);">
+        <p>No render tasks found. Click <strong>+ Dispatch New Render</strong> to start rendering.</p>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Dispatch New Render Modal / Dialog -->
+<div id="dispatch-modal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); z-index: 1000; padding: 2rem; overflow-y: auto;">
+    <div class="card" style="max-width: 650px; margin: 2rem auto; background: var(--bg-card);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+            <h2 style="font-size: 1.35rem; font-weight: 700; margin: 0;">
+                <span class="lang-en">Dispatch Project Render</span>
+                <span class="lang-ar">إرسال مشروع للرندر</span>
+            </h2>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('dispatch-modal').style.display='none'">✕</button>
+        </div>
+
+        <form method="POST" action="/render-queue/dispatch">
+            <div style="margin-bottom: 1rem;">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Channel / القناة *</label>
+                <select name="channel_id" id="modal-channel-select" class="form-control" required onchange="filterModalProjects(this.value)">
+                    <option value="">-- Select Channel --</option>
+                    {% for ch in channels %}
+                    <option value="{{ ch.id }}">{{ ch.name }} ({{ ch.id }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div style="margin-bottom: 1rem;">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Project / المشروع *</label>
+                <select name="project_id" id="modal-project-select" class="form-control" required>
+                    <option value="">-- Select Project --</option>
+                    {% for p in projects %}
+                    <option value="{{ p.id }}" data-channel="{{ p.channel_id }}">{{ p.title }} ({{ p.id }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                <div>
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Mode / النمط</label>
+                    <select name="mode" class="form-control">
+                        <option value="preview">Internal Preview (معاينة داخلية)</option>
+                        <option value="export">Commercial Export (تصدير نهائي - ADR-008 Gate)</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Aspect Ratio / نسبة الأبعاد</label>
+                    <select name="aspect_ratio" class="form-control">
+                        <option value="9:16">Vertical 9:16 (Shorts / Reels / TikTok)</option>
+                        <option value="16:9">Horizontal 16:9 (YouTube Standard)</option>
+                        <option value="1:1">Square 1:1 (Social Feed)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                <div>
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Aspect Mode / وضع الملاءمة</label>
+                    <select name="aspect_mode" class="form-control">
+                        <option value="cover">cover (Crop to fill)</option>
+                        <option value="contain">contain (Letterbox/Pillarbox)</option>
+                        <option value="blur_pad">blur_pad (Blurred padding)</option>
+                        <option value="fit">fit</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Transition / الانتقال</label>
+                    <select name="transition" class="form-control">
+                        <option value="fade">fade (تلاشي)</option>
+                        <option value="crossfade">crossfade</option>
+                        <option value="wipeleft">wipeleft</option>
+                        <option value="wiperight">wiperight</option>
+                        <option value="slideup">slideup</option>
+                        <option value="slidedown">slidedown</option>
+                        <option value="circleopen">circleopen</option>
+                        <option value="smoothleft">smoothleft</option>
+                        <option value="cut">cut (قطع مباشر)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 1.5rem;">
+                <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                    <input type="checkbox" name="burn_subtitles" value="true" checked>
+                    <span>Burn Subtitles into Video (حرق الترجمة التلقائية داخل الفيديو)</span>
+                </label>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 0.5rem;">
+                <button type="button" class="btn btn-secondary" onclick="document.getElementById('dispatch-modal').style.display='none'">Cancel</button>
+                <button type="submit" class="btn btn-primary">Start Rendering</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function filterModalProjects(channelId) {
+    const projSelect = document.getElementById('modal-project-select');
+    if (!projSelect) return;
+    const options = projSelect.querySelectorAll('option');
+    options.forEach(opt => {
+        if (!opt.value) return;
+        const ch = opt.getAttribute('data-channel');
+        if (!channelId || ch === channelId) {
+            opt.style.display = '';
+        } else {
+            opt.style.display = 'none';
+        }
+    });
+    projSelect.value = '';
+}
+</script>
+{% endblock %}

@@ -16,6 +16,8 @@ from src.database.repositories.file_operation_repository import FileOperationRep
 from src.database.repositories.audit_repository import AuditRepository
 from src.database.repositories.flow_inbound_repository import FlowInboundRepository
 from src.database.repositories.flow_prompt_repository import FlowPromptRepository
+from src.database.repositories.batch_repository import BatchRepository
+from src.database.repositories.task_repository import TaskRepository
 
 from src.storage.service import StorageService
 from src.services.channel_service import ChannelService
@@ -24,6 +26,9 @@ from src.services.scene_service import SceneService
 from src.services.asset_service import AssetService
 from src.services.license_service import LicenseService
 from src.services.audit_service import AuditService
+from src.services.task_service import TaskService
+from src.services.batch_service import BatchService
+from src.services.render_service import RenderService
 from src.creative.channel_profile_service import ChannelProfileService
 from src.creative.character_bible_service import CharacterBibleService
 from src.creative.rules_engine import CreativeRulesEngine
@@ -49,6 +54,8 @@ class ServiceContainer:
         self.audit_repo = AuditRepository(self.db)
         self.flow_inbound_repo = FlowInboundRepository(self.db)
         self.flow_prompt_repo = FlowPromptRepository(self.db)
+        self.batch_repo = BatchRepository(self.db)
+        self.task_repo = TaskRepository(self.db)
 
         # Core Domain Services
         self.audit_service = AuditService(self.audit_repo)
@@ -56,12 +63,33 @@ class ServiceContainer:
         self.channel_service = ChannelService(self.channel_repo)
         self.project_service = ProjectService(self.project_repo, self.channel_repo)
         self.scene_service = SceneService(self.scene_repo, self.project_repo)
+        self.task_service = TaskService(
+            task_repository=self.task_repo,
+            channel_repository=self.channel_repo,
+            project_repository=self.project_repo,
+            scene_repository=self.scene_repo,
+        )
+        self.batch_service = BatchService(
+            batch_repository=self.batch_repo,
+            task_service=self.task_service,
+            channel_repository=self.channel_repo,
+        )
         self.asset_service = AssetService(
             asset_repository=self.asset_repo,
             license_repository=self.license_repo,
             file_operation_repository=self.file_op_repo,
             audit_service=self.audit_service,
             storage_service=self.storage,
+        )
+        self.render_service = RenderService(
+            db_manager=self.db,
+            storage_service=self.storage,
+            task_service=self.task_service,
+            project_service=self.project_service,
+            scene_service=self.scene_service,
+            asset_service=self.asset_service,
+            license_service=self.license_service,
+            flow_inbound_repo=self.flow_inbound_repo,
         )
 
         # Creative & Flow Services

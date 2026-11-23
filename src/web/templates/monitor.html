@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+
+{% block title %}System & Render Monitor - Universal AI Video Studio{% endblock %}
+
+{% block content %}
+<div class="card" style="margin-bottom: 1.5rem;">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+        <div>
+            <h1 style="font-size: 1.75rem; font-weight: 700; margin: 0;">
+                <span class="lang-en">System & Render Monitor</span>
+                <span class="lang-ar">شاشة المراقبة وتشخيص الأخطاء المباشرة</span>
+            </h1>
+            <p style="color: var(--text-secondary); margin-top: 0.25rem;">
+                <span class="lang-en">Real-time execution phase monitoring, cache hit rates, audio measurements (LUFS & True Peak), and diagnostics.</span>
+                <span class="lang-ar">مراقبة حية لمراحل المعالجة، ونسب إصابة الذاكرة المخبأة، وقياسات الصوت التشغيلية والأخطاء التفصيلية.</span>
+            </p>
+        </div>
+        <div style="display: flex; align-items: center; gap: 0.75rem;">
+            <span id="live-indicator" style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #10b981;"></span>
+            <span style="font-size: 0.85rem; color: var(--text-secondary);">Live Polling (Every 3s)</span>
+        </div>
+    </div>
+</div>
+
+<!-- Active Task Live Cards -->
+<div id="active-tasks-container" style="margin-bottom: 1.5rem;">
+    <h2 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 1rem;">
+        <span class="lang-en">Render Tasks Live Monitor</span>
+        <span class="lang-ar">المراقبة اللحظية لمهام الرندر</span>
+    </h2>
+
+    {% if renders %}
+    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 1rem;">
+        {% for r in renders %}
+        <div class="card task-monitor-card" id="card-{{ r.task_id }}" style="border-left: 4px solid {% if r.status == 'completed' %}#10b981{% elif r.status == 'running' %}#3b82f6{% elif r.status == 'failed' %}#ef4444{% else %}#f59e0b{% endif %};">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem;">
+                <div>
+                    <strong style="font-size: 0.95rem;">{{ r.project_id or 'Project' }}</strong>
+                    <div style="font-family: monospace; font-size: 0.75rem; color: var(--text-secondary);">{{ r.task_id }}</div>
+                </div>
+                <span class="badge {% if r.status == 'completed' %}badge-success{% elif r.status == 'running' %}badge-primary{% elif r.status == 'failed' %}badge-danger{% else %}badge-warning{% endif %}">
+                    {{ r.status|upper }}
+                </span>
+            </div>
+
+            <!-- Phase & Progress -->
+            <div style="margin-bottom: 0.75rem;">
+                <div style="display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 0.25rem;">
+                    <span>Phase: <strong>{{ r.phase }}</strong></span>
+                    <span>
+                        {% if r.is_indeterminate %}
+                        <span style="color: var(--text-secondary);">Indeterminate</span>
+                        {% else %}
+                        <strong>{{ r.progress_percent }}%</strong>
+                        {% endif %}
+                    </span>
+                </div>
+                <div style="background: var(--bg-secondary); border-radius: 4px; height: 8px; overflow: hidden;">
+                    <div style="background: var(--primary-color); height: 100%; width: {{ r.progress_percent or (100 if r.status == 'completed' else 0) }}%;"></div>
+                </div>
+            </div>
+
+            <!-- Telemetry & Metrics -->
+            <div style="background: var(--bg-secondary); border-radius: 6px; padding: 0.5rem 0.75rem; font-size: 0.8rem; margin-bottom: 0.5rem; display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
+                <div>
+                    <span style="color: var(--text-secondary);">Cache: </span>
+                    <strong>{% if r.cache_hit %}HIT (100%){% else %}MISS / Normal{% endif %}</strong>
+                </div>
+                <div>
+                    <span style="color: var(--text-secondary);">True Peak: </span>
+                    <strong>{% if r.true_peak is not none %}{{ "%.2f"|format(r.true_peak) }} dBTP{% else %}N/A{% endif %}</strong>
+                </div>
+                <div>
+                    <span style="color: var(--text-secondary);">Loudness: </span>
+                    <strong>{% if r.lufs is not none %}{{ "%.1f"|format(r.lufs) }} LUFS{% else %}N/A{% endif %}</strong>
+                </div>
+                <div>
+                    <span style="color: var(--text-secondary);">Duration: </span>
+                    <strong>{% if r.duration_sec %}{{ "%.1f"|format(r.duration_sec) }}s{% else %}—{% endif %}</strong>
+                </div>
+            </div>
+
+            <!-- Error Diagnostic (if failed) -->
+            {% if r.error_message %}
+            <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid #ef4444; border-radius: 6px; padding: 0.5rem; font-size: 0.8rem; color: #ef4444; margin-bottom: 0.5rem;">
+                <strong>Error: </strong>{{ r.error_message }}
+            </div>
+            {% endif %}
+
+            <!-- Actions -->
+            <div style="display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 0.5rem;">
+                {% if r.status == 'completed' %}
+                <a href="/preview?task_id={{ r.task_id }}" class="btn btn-sm btn-primary">▶ Preview Output</a>
+                {% elif r.status in ('failed', 'cancelled') %}
+                <form method="POST" action="/render-queue/{{ r.task_id }}/retry" style="display: inline;">
+                    <button type="submit" class="btn btn-sm btn-secondary">↻ Retry</button>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="card" style="text-align: center; padding: 2rem; color: var(--text-secondary);">
+        <p>No active or recent render tasks to monitor.</p>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+// Poll active render tasks status every 3 seconds
+setInterval(async () => {
+    try {
+        const resp = await fetch('/monitor/api/tasks');
+        if (!resp.ok) return;
+        const data = await resp.json();
+        const indicator = document.getElementById('live-indicator');
+        if (indicator) {
+            indicator.style.opacity = '0.3';
+            setTimeout(() => { indicator.style.opacity = '1'; }, 300);
+        }
+    } catch (e) {
+        console.debug("Monitor polling tick: ", e);
+    }
+}, 3000);
+</script>
+{% endblock %}

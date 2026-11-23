@@ -19,19 +19,31 @@
 
     <nav class="main-nav">
       <a href="/dashboard" class="nav-link {% if active_page == 'dashboard' %}active{% endif %}">
-        <span>📊</span> <span>لوحة التحكم</span>
+        <span>📊</span> <span class="nav-text" data-ar="لوحة التحكم" data-en="Dashboard">لوحة التحكم</span>
       </a>
       <a href="/channels" class="nav-link {% if active_page == 'channels' %}active{% endif %}">
-        <span>📺</span> <span>القنوات</span>
+        <span>📺</span> <span class="nav-text" data-ar="القنوات" data-en="Channels">القنوات</span>
       </a>
       <a href="/projects" class="nav-link {% if active_page == 'projects' %}active{% endif %}">
-        <span>🎬</span> <span>المشاريع</span>
+        <span>🎬</span> <span class="nav-text" data-ar="المشاريع" data-en="Projects">المشاريع</span>
       </a>
       <a href="/characters" class="nav-link {% if active_page == 'characters' %}active{% endif %}">
-        <span>👤</span> <span>الشخصيات</span>
+        <span>👤</span> <span class="nav-text" data-ar="الشخصيات" data-en="Characters">الشخصيات</span>
       </a>
       <a href="/assets" class="nav-link {% if active_page == 'assets' %}active{% endif %}">
-        <span>📁</span> <span>مكتبة الأصول (MAM)</span>
+        <span>📁</span> <span class="nav-text" data-ar="مكتبة الأصول" data-en="Assets (MAM)">مكتبة الأصول (MAM)</span>
+      </a>
+      <a href="/render-queue" class="nav-link {% if active_page == 'render_queue' %}active{% endif %}">
+        <span>⏳</span> <span class="nav-text" data-ar="قائمة الرندر" data-en="Render Queue">قائمة الرندر</span>
+      </a>
+      <a href="/batch" class="nav-link {% if active_page == 'batch' %}active{% endif %}">
+        <span>📦</span> <span class="nav-text" data-ar="الإنتاج بالدفعات" data-en="Batch Production">الإنتاج بالدفعات</span>
+      </a>
+      <a href="/preview" class="nav-link {% if active_page == 'preview' %}active{% endif %}">
+        <span>👁️</span> <span class="nav-text" data-ar="معاينة الفيديو" data-en="Video Preview">معاينة الفيديو</span>
+      </a>
+      <a href="/monitor" class="nav-link {% if active_page == 'monitor' %}active{% endif %}">
+        <span>📈</span> <span class="nav-text" data-ar="المراقبة والنظام" data-en="System Monitor">المراقبة والنظام</span>
       </a>
     </nav>
 

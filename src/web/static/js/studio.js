@@ -21,6 +21,11 @@ function setLanguage(lang) {
   if (langBtn) {
     langBtn.textContent = lang === "ar" ? "English" : "العربية";
   }
+
+  // Update all elements with data-ar and data-en
+  document.querySelectorAll("[data-ar][data-en]").forEach(el => {
+    el.textContent = lang === "ar" ? el.getAttribute("data-ar") : el.getAttribute("data-en");
+  });
 }
 
 function toggleLanguage() {
