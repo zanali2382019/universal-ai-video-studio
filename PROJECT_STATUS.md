@@ -84,4 +84,15 @@
 - [x] **Task 3.15b: واجهة طابور الإنتاج والدفعات والمعاينة المباشرة والمراقبة (Studio GUI — Render Queue, Batch Production, Video Preview & Monitoring):** (مكتملة ومختبرة ومطابقة بنسبة 100% — تم استكمال واجهة الاستوديو بإضافة طابور الرندر الفعلي `/render-queue` مع خيارات المعاينة الداخلية والتصدير النهائي الخاضع لبوابة ADR-008، ونسب الأبعاد 9:16 و 16:9 و 1:1، وأوضاع الملاءمة والانتقالات والترجمة؛ بناء منظومة الإنتاج بالدفعات `/batch` عبر كينونة `batch_jobs` وهجرة قاعدة البيانات Migration 7 مع عزل الأخطاء وتتبع التقدم التراكمي؛ بناء محرك مشغل الفيديو ومعاينة المخرجات `/preview` المدعوم بتقنية التدفق الجزئي عبر HTTP Range Requests (200, 206, 416) مع الإغلاق الآمن للمقابض على Windows ومنع اختراق المسارات Path Traversal؛ بناء شاشة المراقبة اللحظية `/monitor` لعرض مراحل المعالجة وCache Hits وقياسات الصوت الفعلية LUFS وTrue Peak دون قيم وهمية؛ الحفاظ على الصفر المطلق لاستيراد sqlite3 المباشر داخل `src/web/` عبر فحص AST الصارم؛ 8 اختبارات تكاملية جديدة واجتياز 242 اختباراً إجمالياً بنجاح 100% — 229 اختباراً محمولاً + 13 اختبار قبول إنتاج محلي).
   * جناح اختبارات الرندر والدفعات والمراقبة: [`tests/test_task_315b_render_gui.py`](file:///E:/AI-Projects/universal-ai-video-studio/tests/test_task_315b_render_gui.py).
   * برنامج القبول الآلي التكاملي: [`scripts/verify_render_acceptance.py`](file:///E:/AI-Projects/universal-ai-video-studio/scripts/verify_render_acceptance.py).
-- [ ] **Task 3.16: التجهيز النهائي للتصدير والنشر (Export & Publishing Preparation):** (المهمة القادمة — تتطلب موافقة المستخدم الصريحة للبدء وفق خارطة الطريق).
+- [x] **Task 3.16: التجهيز النهائي للتصدير والنشر (Export & Publishing Preparation):**
+  * فحص التراخيص الصارم (ADR-008 Strict License Preflight) لمنع التصدير وحزم النشر دون سند قانوني وحقوق تجارية موثقة.
+  * بروفايلات تصدير منصاتية مستقلة ومُصنفة الإصدارات (YouTube Shorts, Instagram Reels, TikTok, YouTube Standard, Generic 9:16).
+  * محرك تصميم الصور المصغرة باللغة العربية (Pillow, تشكيل الحروف وعكس الاتجاه RTL، التفاف الكلمات متعدد الأسطر، شارات التمييز، واكتشاف الخطوط عبر الأنظمة).
+  * بوابات جودة الوسائط الصوتية والمرئية (EBU R128 Loudness Target -14 LUFS, True Peak Ceiling <= -1.0 dBTP, معالجة القيم غير المقاسة كـ 'Not Measured' صراحة).
+  * توليد بيانات النشر المنصاتية المؤصلة وغير المهلوسة (Grounded Platform Metadata) مع تقسيم الفصول بدقة الطوابع الزمنية.
+  * تجميع حزم التصدير الذرية (Atomic Packaging) مع بيان التصدير الشامل `export_manifest.json` وبصمات SHA-256 وأرشيف ZIP نسبي بالكامل.
+  * واجهة ويب كاملة للتصدير والنشر (`/export`, `/export/preflight`, `/export/{id}`, `/export/{id}/download`) مع الامتثال لعزل AST الصارم (Zero Direct SQLite in `src/web/`).
+  * ترحيل قاعدة البيانات Migration 8 (`008_task_3_16_export_packages`) مع الاحتفاظ بنسخة احتياطية موثقة قبل الترحيل.
+  * جناح اختبارات شامل [`tests/test_task_316_export_preparation.py`](file:///E:/AI-Projects/universal-ai-video-studio/tests/test_task_316_export_preparation.py) وبرنامج تحقق القبول [`scripts/verify_export_acceptance.py`](file:///E:/AI-Projects/universal-ai-video-studio/scripts/verify_export_acceptance.py).
+  * إجمالي الاختبارات الناجحة: 250 اختباراً (237 portable + 13 production) بنسبة نجاح 100%.
+- [ ] **Task 3.17: النشر الآلي متعدد المنصات (Automated Multi-Platform Publishing):** (المهمة القادمة — تتطلب موافقة المستخدم الصريحة للبدء وفق خارطة الطريق).

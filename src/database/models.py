@@ -619,3 +619,64 @@ class BatchJobCreate(BaseModel):
     name: str
     task_ids: List[str] = Field(default_factory=list)
     metadata: Dict[str, Any] = Field(default_factory=dict)
+
+
+class ExportPackageModel(BaseModel):
+    """Model representing an exported publishing package (Task 3.16)."""
+    id: str
+    channel_id: str
+    project_id: str
+    platform: str  # youtube_shorts, instagram_reels, tiktok, generic
+    profile_name: str
+    version: int = 1
+    status: str = Field(default="draft", description="draft, verifying, completed, failed")
+    video_path: Optional[str] = None
+    video_sha256: Optional[str] = None
+    thumbnail_path: Optional[str] = None
+    thumbnail_sha256: Optional[str] = None
+    manifest_path: Optional[str] = None
+    zip_path: Optional[str] = None
+    zip_sha256: Optional[str] = None
+    license_preflight: Dict[str, Any] = Field(default_factory=dict)
+    quality_gates: Dict[str, Any] = Field(default_factory=dict)
+    metadata: Dict[str, Any] = Field(default_factory=dict)    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    updated_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+    @classmethod
+    def from_row(cls, row: Any) -> "ExportPackageModel":
+        data = dict(row)
+        for json_field, target_attr in [
+            ("license_preflight_json", "license_preflight"),
+            ("quality_gates_json", "quality_gates"),
+            ("metadata_json", "metadata"),
+        ]:
+            if isinstance(data.get(json_field), str):
+                try:
+                    data[target_attr] = json.loads(data[json_field])
+                except Exception:
+                    data[target_attr] = {}
+            elif target_attr not in data:
+                data[target_attr] = {}
+
+        return cls(**data)
+
+
+class ExportPackageCreate(BaseModel):
+    """Payload to create a new export package."""
+    id: Optional[str] = None
+    channel_id: str
+    project_id: str
+    platform: str
+    profile_name: str
+    version: int = 1
+    status: str = "draft"
+    video_path: Optional[str] = None
+    video_sha256: Optional[str] = None
+    thumbnail_path: Optional[str] = None
+    thumbnail_sha256: Optional[str] = None
+    manifest_path: Optional[str] = None
+    zip_path: Optional[str] = None
+    zip_sha256: Optional[str] = None
+    license_preflight: Dict[str, Any] = Field(default_factory=dict)
+    quality_gates: Dict[str, Any] = Field(default_factory=dict)
+    metadata: Dict[str, Any] = Field(default_factory=dict)

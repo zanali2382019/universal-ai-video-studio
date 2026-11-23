@@ -115,6 +115,11 @@ class TestRenderQueueAndBatchGUIIntegration(unittest.TestCase):
             }
         )
 
+    def setUp(self):
+        # Stop background workers before each test for deterministic assertions
+        self.services.render_service.stop_worker_pool()
+
+
     @classmethod
     def tearDownClass(cls):
         try:

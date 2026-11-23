@@ -19,6 +19,8 @@ class RenderProfile:
     audio_sample_rate: int = 48000
     audio_channels: int = 2
     audio_bitrate: str = "192k"
+    target_lufs: float = -14.0
+    true_peak_db: float = -1.0
     description: str = ""
 
     @property

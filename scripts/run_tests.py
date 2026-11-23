@@ -57,6 +57,7 @@ PORTABLE_TEST_MODULES = [
     "tests.test_task_314_rendering_engine",
     "tests.test_task_315a_studio_gui",
     "tests.test_task_315b_render_gui",
+    "tests.test_task_316_export_preparation",
 ]
 
 PRODUCTION_TEST_MODULES = [

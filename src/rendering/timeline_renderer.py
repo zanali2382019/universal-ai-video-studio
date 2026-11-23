@@ -680,7 +680,7 @@ class TimelineRenderer:
     ) -> Optional[Path]:
         sample_rate = getattr(profile, "audio_sample_rate", 44100)
         target_lufs = getattr(profile, "target_lufs", -14.0)
-        true_peak_db = getattr(profile, "true_peak_db", -1.0)
+        true_peak_db = getattr(profile, "true_peak_db", getattr(profile, "true_peak_ceiling", -1.0))
         audio_channels = getattr(profile, "audio_channels", 2)
 
         has_per_scene_vo = any(s.voiceover_path and s.voiceover_path.exists() for s in scenes)
@@ -783,7 +783,7 @@ class TimelineRenderer:
             ]
             self.wrapper.run_ffmpeg(bgm_args)
 
-        if enforce_true_peak and hasattr(profile, "target_lufs"):
+        if enforce_true_peak:
             normalized_audio = temp_dir / "final_ebur128_audio.wav"
             loudness_filter = (
                 f"loudnorm=I={target_lufs}:TP={true_peak_db}:LRA=11,"

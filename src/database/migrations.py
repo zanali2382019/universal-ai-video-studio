@@ -414,6 +414,38 @@ MIGRATIONS: List[Tuple[int, str, str]] = [
         CREATE INDEX IF NOT EXISTS idx_batch_jobs_status ON batch_jobs(status);
         """,
     ),
+    (
+        8,
+        "008_task_3_16_export_packages",
+        """
+        -- Export Packages Table (Task 3.16: Export & Publishing Preparation)
+        CREATE TABLE IF NOT EXISTS export_packages (
+            id TEXT PRIMARY KEY,
+            channel_id TEXT NOT NULL REFERENCES channels(id) ON DELETE CASCADE,
+            project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+            platform TEXT NOT NULL,
+            profile_name TEXT NOT NULL,
+            version INTEGER NOT NULL DEFAULT 1,
+            status TEXT NOT NULL DEFAULT 'draft',
+            video_path TEXT,
+            video_sha256 TEXT,
+            thumbnail_path TEXT,
+            thumbnail_sha256 TEXT,
+            manifest_path TEXT,
+            zip_path TEXT,
+            zip_sha256 TEXT,
+            license_preflight_json TEXT NOT NULL DEFAULT '{}',
+            quality_gates_json TEXT NOT NULL DEFAULT '{}',
+            metadata_json TEXT NOT NULL DEFAULT '{}',
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_export_packages_proj ON export_packages(project_id, created_at DESC);
+        CREATE INDEX IF NOT EXISTS idx_export_packages_chan ON export_packages(channel_id);
+        CREATE INDEX IF NOT EXISTS idx_export_packages_status ON export_packages(status);
+        """,
+    ),
 ]
 
 

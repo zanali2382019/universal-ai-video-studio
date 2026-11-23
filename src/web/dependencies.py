@@ -18,6 +18,7 @@ from src.database.repositories.flow_inbound_repository import FlowInboundReposit
 from src.database.repositories.flow_prompt_repository import FlowPromptRepository
 from src.database.repositories.batch_repository import BatchRepository
 from src.database.repositories.task_repository import TaskRepository
+from src.database.repositories.export_repository import ExportRepository
 
 from src.storage.service import StorageService
 from src.services.channel_service import ChannelService
@@ -29,6 +30,7 @@ from src.services.audit_service import AuditService
 from src.services.task_service import TaskService
 from src.services.batch_service import BatchService
 from src.services.render_service import RenderService
+from src.services.export_service import ExportService
 from src.creative.channel_profile_service import ChannelProfileService
 from src.creative.character_bible_service import CharacterBibleService
 from src.creative.rules_engine import CreativeRulesEngine
@@ -56,6 +58,7 @@ class ServiceContainer:
         self.flow_prompt_repo = FlowPromptRepository(self.db)
         self.batch_repo = BatchRepository(self.db)
         self.task_repo = TaskRepository(self.db)
+        self.export_repo = ExportRepository(self.db)
 
         # Core Domain Services
         self.audit_service = AuditService(self.audit_repo)
@@ -90,6 +93,14 @@ class ServiceContainer:
             asset_service=self.asset_service,
             license_service=self.license_service,
             flow_inbound_repo=self.flow_inbound_repo,
+        )
+        self.export_service = ExportService(
+            db_manager=self.db,
+            export_repository=self.export_repo,
+            license_service=self.license_service,
+            project_repository=self.project_repo,
+            scene_repository=self.scene_repo,
+            channel_repository=self.channel_repo,
         )
 
         # Creative & Flow Services

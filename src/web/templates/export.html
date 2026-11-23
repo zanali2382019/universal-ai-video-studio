@@ -1,0 +1,345 @@
+{% extends "base.html" %}
+
+{% block title %}Export & Publishing - Universal AI Video Studio{% endblock %}
+
+{% block content %}
+<div class="card" style="margin-bottom: 1.5rem;">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+        <div>
+            <h1 style="font-size: 1.75rem; font-weight: 700; margin: 0;">
+                <span class="lang-en">Export & Publishing Preparation (Task 3.16)</span>
+                <span class="lang-ar">التصدير وحزم النشر المنصاتي (Export & Publishing)</span>
+            </h1>
+            <p style="color: var(--text-secondary); margin-top: 0.25rem;">
+                <span class="lang-en">Strict License Preflight (ADR-008), Arabic Thumbnails, EBU R128 Quality Gates, and Atomic Release Packaging.</span>
+                <span class="lang-ar">فحص الترخيص الصارم (ADR-008)، تصميم الصور المصغرة باللغة العربية، بوابات جودة الصوت والفيديو، وحزم التصدير الذرية.</span>
+            </p>
+        </div>
+        <div>
+            <button type="button" class="btn btn-primary" onclick="document.getElementById('create-export-modal').style.display='block'">
+                <span class="lang-en">🚀 Create Export Package</span>
+                <span class="lang-ar">🚀 إنشاء حزمة تصدير جديدة</span>
+            </button>
+        </div>
+    </div>
+</div>
+
+{% if error_message %}
+<div class="alert alert-danger" style="margin-bottom: 1.5rem;">
+    <span>⚠</span> <span>{{ error_message }}</span>
+</div>
+{% endif %}
+
+<!-- Quick Preflight & Channel Filter -->
+<div class="card" style="margin-bottom: 1.5rem;">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+        <form method="GET" action="/export" style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+            <label style="font-weight: 600;">
+                <span class="lang-en">Channel:</span>
+                <span class="lang-ar">القناة:</span>
+            </label>
+            <select name="channel_id" class="form-control" style="width: auto;" onchange="this.form.submit()">
+                {% for ch in channels %}
+                <option value="{{ ch.id }}" {% if ch.id == selected_channel %}selected{% endif %}>{{ ch.name }} ({{ ch.id }})</option>
+                {% endfor %}
+            </select>
+        </form>
+
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <span style="font-weight: 600;">
+                <span class="lang-en">Fast License Preflight:</span>
+                <span class="lang-ar">فحص الترخيص السريع:</span>
+            </span>
+            <select id="preflight-project-select" class="form-control" style="width: auto;">
+                {% for p in projects %}
+                <option value="{{ p.id }}">{{ p.title or p.id }}</option>
+                {% endfor %}
+            </select>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="runPreflightCheck()">
+                <span class="lang-en">Verify ADR-008</span>
+                <span class="lang-ar">فحص ADR-008</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Live Preflight Result Box -->
+    <div id="preflight-result-box" style="display: none; margin-top: 1rem; padding: 1rem; border-radius: 6px; border: 1px solid var(--border-color);">
+        <div id="preflight-status-line" style="font-weight: 700; font-size: 1.1rem; margin-bottom: 0.5rem;"></div>
+        <div id="preflight-details-line" style="font-size: 0.9rem; color: var(--text-secondary);"></div>
+    </div>
+</div>
+
+<!-- Platform Profiles Section -->
+<div class="card" style="margin-bottom: 1.5rem;">
+    <h2 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 1rem;">
+        <span class="lang-en">Supported Platform Profiles</span>
+        <span class="lang-ar">بروفايلات المنصات المعتمدة وإعداداتها التقنية</span>
+    </h2>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1rem;">
+        {% for prof in profiles %}
+        <div style="border: 1px solid var(--border-color); border-radius: 8px; padding: 1rem; background: var(--bg-surface);">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem;">
+                <h3 style="font-size: 1.1rem; font-weight: 700; margin: 0;">
+                    <span class="lang-en">{{ prof.name_en }}</span>
+                    <span class="lang-ar">{{ prof.name_ar }}</span>
+                </h3>
+                <span class="badge badge-info" style="font-size: 0.75rem;">v{{ prof.version }}</span>
+            </div>
+            <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.75rem;">
+                <span class="lang-en">{{ prof.description_en }}</span>
+                <span class="lang-ar">{{ prof.description_ar }}</span>
+            </p>
+            <div style="font-size: 0.8rem; line-height: 1.6;">
+                <div>📐 <strong>Aspect Ratio:</strong> {{ prof.aspect_ratio }} ({{ prof.width }}x{{ prof.height }})</div>
+                <div>⏱ <strong>Max Duration:</strong> {% if prof.max_duration_seconds %}{{ prof.max_duration_seconds }}s{% else %}No limit{% endif %}</div>
+                <div>🎬 <strong>Video:</strong> {{ prof.allowed_video_codecs|join(", ") }}</div>
+                <div>🔊 <strong>Audio:</strong> {{ prof.allowed_audio_codecs|join(", ") }} ({{ prof.target_lufs }} LUFS)</div>
+                <div>🔍 <strong>Ceiling:</strong> &le; {{ prof.max_true_peak_dbtp }} dBTP</div>
+                <div style="margin-top: 0.5rem; font-size: 0.75rem; color: var(--text-muted); border-top: 1px dashed var(--border-color); padding-top: 0.25rem;">
+                    📅 Reviewed: {{ prof.last_reviewed_date }}<br>
+                    ⚠ <em>{{ prof.platform_disclaimer }}</em>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Export Packages History Table -->
+<div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <h2 style="font-size: 1.25rem; font-weight: 600; margin: 0;">
+            <span class="lang-en">Released Export Packages ({{ packages|length }})</span>
+            <span class="lang-ar">حزم التصدير المنشورة وسجلاتها ({{ packages|length }})</span>
+        </h2>
+    </div>
+
+    {% if packages %}
+    <div style="overflow-x: auto;">
+        <table class="table" style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="border-bottom: 1px solid var(--border-color); text-align: start;">
+                    <th style="padding: 0.75rem;">Package ID</th>
+                    <th style="padding: 0.75rem;">Project & Channel</th>
+                    <th style="padding: 0.75rem;">Platform Profile</th>
+                    <th style="padding: 0.75rem;">Status</th>
+                    <th style="padding: 0.75rem;">ZIP SHA-256</th>
+                    <th style="padding: 0.75rem;">Created</th>
+                    <th style="padding: 0.75rem;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for pkg in packages %}
+                <tr style="border-bottom: 1px solid var(--border-color);">
+                    <td style="padding: 0.75rem; font-family: monospace; font-size: 0.9rem;">
+                        <a href="/export/{{ pkg.id }}" style="color: var(--primary-color); font-weight: 600; text-decoration: none;">
+                            {{ pkg.id }}
+                        </a>
+                    </td>
+                    <td style="padding: 0.75rem;">
+                        <div style="font-weight: 600;">{{ pkg.project_id }}</div>
+                        <div style="font-size: 0.8rem; color: var(--text-secondary);">{{ pkg.channel_id }}</div>
+                    </td>
+                    <td style="padding: 0.75rem;">
+                        <span class="badge badge-info">{{ pkg.profile_name }}</span>
+                    </td>
+                    <td style="padding: 0.75rem;">
+                        {% if pkg.status == 'completed' %}
+                        <span class="badge badge-success">✓ Completed</span>
+                        {% elif pkg.status == 'failed' %}
+                        <span class="badge badge-danger">✗ Failed</span>
+                        {% else %}
+                        <span class="badge badge-warning">{{ pkg.status }}</span>
+                        {% endif %}
+                    </td>
+                    <td style="padding: 0.75rem; font-family: monospace; font-size: 0.8rem;">
+                        {% if pkg.zip_sha256 %}
+                        <span title="{{ pkg.zip_sha256 }}">{{ pkg.zip_sha256[:12] }}...</span>
+                        {% else %}
+                        <span style="color: var(--text-muted);">-</span>
+                        {% endif %}
+                    </td>
+                    <td style="padding: 0.75rem; font-size: 0.85rem; color: var(--text-secondary);">
+                        {{ pkg.created_at[:16].replace('T', ' ') }}
+                    </td>
+                    <td style="padding: 0.75rem;">
+                        <div style="display: flex; gap: 0.5rem;">
+                            <a href="/export/{{ pkg.id }}" class="btn btn-secondary btn-sm">
+                                <span class="lang-en">Inspect</span>
+                                <span class="lang-ar">فحص</span>
+                            </a>
+                            {% if pkg.zip_path %}
+                            <a href="/export/{{ pkg.id }}/download" class="btn btn-primary btn-sm">
+                                <span class="lang-en">Download ZIP</span>
+                                <span class="lang-ar">تحميل الحزمة</span>
+                            </a>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div style="text-align: center; padding: 3rem 1rem; color: var(--text-secondary);">
+        <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">📦</div>
+        <p>
+            <span class="lang-en">No export packages created yet. Click "+ Create Export Package" to prepare your first release.</span>
+            <span class="lang-ar">لم يتم إنشاء حزم تصدير بعد. انقر على "+ إنشاء حزمة تصدير جديدة" لتجهيز أول حزمة نشر.</span>
+        </p>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Create Export Package Modal -->
+<div id="create-export-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; overflow-y: auto;">
+    <div style="background: var(--bg-card); max-width: 600px; margin: 5% auto; padding: 2rem; border-radius: 8px; border: 1px solid var(--border-color);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+            <h2 style="font-size: 1.3rem; font-weight: 700; margin: 0;">
+                <span class="lang-en">Assemble Platform Export Package</span>
+                <span class="lang-ar">تجميع حزمة تصدير منصات متكاملة</span>
+            </h2>
+            <button type="button" onclick="document.getElementById('create-export-modal').style.display='none'" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-primary);">&times;</button>
+        </div>
+
+        <form method="POST" action="/export/generate">
+            <div class="form-group" style="margin-bottom: 1rem;">
+                <label style="display: block; font-weight: 600; margin-bottom: 0.25rem;">
+                    <span class="lang-en">Channel</span>
+                    <span class="lang-ar">القناة</span>
+                </label>
+                <select name="channel_id" class="form-control" required>
+                    {% for ch in channels %}
+                    <option value="{{ ch.id }}" {% if ch.id == selected_channel %}selected{% endif %}>{{ ch.name }} ({{ ch.id }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 1rem;">
+                <label style="display: block; font-weight: 600; margin-bottom: 0.25rem;">
+                    <span class="lang-en">Project / Episode</span>
+                    <span class="lang-ar">المشروع / الحلقة</span>
+                </label>
+                <select name="project_id" class="form-control" required>
+                    {% for p in projects %}
+                    <option value="{{ p.id }}">{{ p.title or p.id }} ({{ p.id }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 1rem;">
+                <label style="display: block; font-weight: 600; margin-bottom: 0.25rem;">
+                    <span class="lang-en">Platform Profile</span>
+                    <span class="lang-ar">بروفايل المنصة المستهدفة</span>
+                </label>
+                <select name="profile_id" class="form-control" required>
+                    {% for prof in profiles %}
+                    <option value="{{ prof.profile_id }}">
+                        {{ prof.name_en }} ({{ prof.aspect_ratio }}, max {{ prof.max_duration_seconds or 'unbounded' }}s)
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 1rem;">
+                <label style="display: block; font-weight: 600; margin-bottom: 0.25rem;">
+                    <span class="lang-en">Arabic Thumbnail Title (Optional)</span>
+                    <span class="lang-ar">عنوان الصورة المصغرة بالعربية (اختياري)</span>
+                </label>
+                <input type="text" name="headline_ar" class="form-control" placeholder="مثال: مغامرات ممتعة في الحديقة" dir="rtl">
+            </div>
+
+            <div class="form-group" style="margin-bottom: 1rem;">
+                <label style="display: block; font-weight: 600; margin-bottom: 0.25rem;">
+                    <span class="lang-en">Badge / Pill Text (Optional)</span>
+                    <span class="lang-ar">نص الشارة العلوية (اختياري)</span>
+                </label>
+                <input type="text" name="badge_text" class="form-control" placeholder="مثال: حلقة 01 جديدة" dir="rtl">
+            </div>
+
+            <div class="form-group" style="margin-bottom: 1rem;">
+                <label style="display: block; font-weight: 600; margin-bottom: 0.25rem;">
+                    <span class="lang-en">Video File Path Override (Optional)</span>
+                    <span class="lang-ar">مسار ملف الفيديو يدوياً (اختياري)</span>
+                </label>
+                <input type="text" name="video_file_path" class="form-control" placeholder="Leave empty to auto-detect rendered project video">
+            </div>
+
+            <div style="background: var(--bg-surface); padding: 1rem; border-radius: 6px; margin-bottom: 1.5rem; font-size: 0.9rem;">
+                <div style="margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+                    <input type="checkbox" id="chk-license-gate" name="enforce_license_gate" value="true" checked>
+                    <label for="chk-license-gate" style="margin: 0; font-weight: 600;">
+                        🔒 Enforce Strict License Preflight Gate (ADR-008)
+                    </label>
+                </div>
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <input type="checkbox" id="chk-quality-gate" name="enforce_quality_gate" value="true" checked>
+                    <label for="chk-quality-gate" style="margin: 0; font-weight: 600;">
+                        🔊 Enforce Final Media Quality Gates (-14 LUFS, True Peak &le; -1.0 dBTP)
+                    </label>
+                </div>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 1rem;">
+                <button type="button" class="btn btn-secondary" onclick="document.getElementById('create-export-modal').style.display='none'">
+                    <span class="lang-en">Cancel</span>
+                    <span class="lang-ar">إلغاء</span>
+                </button>
+                <button type="submit" class="btn btn-primary">
+                    <span class="lang-en">Generate Release Package</span>
+                    <span class="lang-ar">توليد وتجميع الحزمة</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+async function runPreflightCheck() {
+    const chSelect = document.querySelector('select[name="channel_id"]');
+    const prSelect = document.getElementById('preflight-project-select');
+    const chId = chSelect ? chSelect.value : "{{ selected_channel }}";
+    const prId = prSelect ? prSelect.value : "";
+
+    if (!chId || !prId) return;
+
+    const box = document.getElementById('preflight-result-box');
+    const statusLine = document.getElementById('preflight-status-line');
+    const detailsLine = document.getElementById('preflight-details-line');
+
+    box.style.display = 'block';
+    statusLine.innerHTML = '⏳ جارٍ فحص الترخيص عبر بوابة ADR-008...';
+    detailsLine.innerHTML = '';
+    box.style.borderColor = 'var(--border-color)';
+    box.style.background = 'var(--bg-surface)';
+
+    try {
+        const formData = new FormData();
+        formData.append('channel_id', chId);
+        formData.append('project_id', prId);
+
+        const resp = await fetch('/export/preflight', {
+            method: 'POST',
+            body: formData
+        });
+        const data = await resp.json();
+
+        if (data.passed) {
+            statusLine.innerHTML = '✅ <span style="color: #10b981;">بوابة الترخيص مجازة بنجاح (ADR-008 PASS)</span>';
+            detailsLine.innerHTML = `تم فحص ${data.total_assets} أصل(اً) بنجاح. جميع الأصول موثقة برخص تجارية سارية ولا توجد أي مخالفات.`;
+            box.style.borderColor = '#10b981';
+        } else {
+            statusLine.innerHTML = '❌ <span style="color: #ef4444;">حظر التصدير: فشل فحص الترخيص (ADR-008 BLOCKED)</span>';
+            const reasons = (data.rejection_reasons || []).join('<br>• ');
+            detailsLine.innerHTML = `<strong>إجمالي الأصول:</strong> ${data.total_assets} | <strong>المعتمدة:</strong> ${data.verified_count} | <strong>المرفوضة:</strong> ${data.unverified_count}<br>• ${reasons}`;
+            box.style.borderColor = '#ef4444';
+        }
+    } catch (err) {
+        statusLine.innerHTML = '⚠ خطأ في الاتصال بخادم الفحص';
+        detailsLine.innerHTML = err.message;
+        box.style.borderColor = '#f59e0b';
+    }
+}
+</script>
+{% endblock %}

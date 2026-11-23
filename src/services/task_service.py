@@ -382,12 +382,27 @@ class TaskService:
                 details={"reason": "Cannot cancel a task that has already terminated."},
             )
 
-        return self.transition_status(
-            task_id=task_id,
-            new_status=TaskStatus.CANCELLED,
-            execution_token=execution_token,
-            error_message=reason,
-        )
+        latest_task = self.get_task(task_id)
+        token_to_use = execution_token if execution_token is not None else latest_task.execution_token
+
+        try:
+            return self.transition_status(
+                task_id=task_id,
+                new_status=TaskStatus.CANCELLED,
+                execution_token=token_to_use,
+                error_message=reason,
+            )
+        except StaleExecutionTokenException:
+            if execution_token is None:
+                # Concurrent worker claim bumped the token; retry cancel with fresh token
+                fresh_task = self.get_task(task_id)
+                return self.transition_status(
+                    task_id=task_id,
+                    new_status=TaskStatus.CANCELLED,
+                    execution_token=fresh_task.execution_token,
+                    error_message=reason,
+                )
+            raise
 
     def pause_task(
         self,

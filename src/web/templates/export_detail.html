@@ -1,0 +1,253 @@
+{% extends "base.html" %}
+
+{% block title %}Package {{ package.id }} - Universal AI Video Studio{% endblock %}
+
+{% block content %}
+<div class="card" style="margin-bottom: 1.5rem;">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+        <div>
+            <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.25rem;">
+                <a href="/export" style="text-decoration: none; color: var(--text-secondary);">&larr; Back to Packages</a>
+                <span class="badge {% if package.status == 'completed' %}badge-success{% elif package.status == 'failed' or package.status == 'quality_failed' or package.status == 'blocked' %}badge-danger{% else %}badge-warning{% endif %}">
+                    {{ package.status }}
+                </span>
+            </div>
+            <h1 style="font-size: 1.6rem; font-weight: 700; margin: 0; font-family: monospace;">
+                {{ package.id }}
+            </h1>
+            <p style="color: var(--text-secondary); margin-top: 0.25rem;">
+                Project: <strong>{{ package.project_id }}</strong> | Channel: <strong>{{ package.channel_id }}</strong> | Profile: <strong>{{ package.profile_name }}</strong>
+            </p>
+        </div>
+        <div style="display: flex; gap: 0.75rem;">
+            {% if package.zip_path and package.status == 'completed' %}
+            <a href="/export/{{ package.id }}/download" class="btn btn-primary">
+                <span>⬇</span>
+                <span class="lang-en">Download Release ZIP</span>
+                <span class="lang-ar">تحميل حزمة النشر الكاملة (ZIP)</span>
+            </a>
+            {% elif package.status == 'quality_failed' %}
+            <button class="btn btn-secondary" disabled style="opacity: 0.6; cursor: not-allowed;" title="Cannot download package with failed quality gates">
+                <span>⛔</span>
+                <span class="lang-en">Download Blocked (Quality Failed)</span>
+                <span class="lang-ar">التحميل محظور (فشل الجودة)</span>
+            </button>
+            {% elif package.status == 'blocked' %}
+            <button class="btn btn-secondary" disabled style="opacity: 0.6; cursor: not-allowed;" title="Cannot download package blocked by license gate">
+                <span>⛔</span>
+                <span class="lang-en">Download Blocked (License)</span>
+                <span class="lang-ar">التحميل محظور (بوابة الترخيص)</span>
+            </button>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Integrity & SHA-256 Hashes Card -->
+<div class="card" style="margin-bottom: 1.5rem;">
+    <h2 style="font-size: 1.2rem; font-weight: 600; margin-bottom: 1rem;">
+        <span class="lang-en">Package Integrity & Cryptographic Hashes (SHA-256)</span>
+        <span class="lang-ar">سلامة الحزمة والبصمات الرقمية (SHA-256)</span>
+    </h2>
+    <div style="overflow-x: auto;">
+        <table class="table" style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="border-bottom: 1px solid var(--border-color); text-align: start;">
+                    <th style="padding: 0.5rem;">Artifact Component</th>
+                    <th style="padding: 0.5rem;">SHA-256 Checksum</th>
+                    <th style="padding: 0.5rem;">File Path</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if package.zip_sha256 %}
+                <tr style="border-bottom: 1px solid var(--border-color);">
+                    <td style="padding: 0.5rem; font-weight: 600;">📦 Release ZIP Archive</td>
+                    <td style="padding: 0.5rem; font-family: monospace; font-size: 0.85rem; color: #10b981;">{{ package.zip_sha256 }}</td>
+                    <td style="padding: 0.5rem; font-size: 0.8rem; color: var(--text-secondary);">{{ package.zip_path }}</td>
+                </tr>
+                {% endif %}
+                {% if package.video_sha256 %}
+                <tr style="border-bottom: 1px solid var(--border-color);">
+                    <td style="padding: 0.5rem; font-weight: 600;">🎬 Rendered Video</td>
+                    <td style="padding: 0.5rem; font-family: monospace; font-size: 0.85rem;">{{ package.video_sha256 }}</td>
+                    <td style="padding: 0.5rem; font-size: 0.8rem; color: var(--text-secondary);">{{ package.video_path }}</td>
+                </tr>
+                {% endif %}
+                {% if package.thumbnail_sha256 %}
+                <tr style="border-bottom: 1px solid var(--border-color);">
+                    <td style="padding: 0.5rem; font-weight: 600;">🖼 Arabic Thumbnail</td>
+                    <td style="padding: 0.5rem; font-family: monospace; font-size: 0.85rem;">{{ package.thumbnail_sha256 }}</td>
+                    <td style="padding: 0.5rem; font-size: 0.8rem; color: var(--text-secondary);">{{ package.thumbnail_path }}</td>
+                </tr>
+                {% endif %}
+                {% if package.manifest_path %}
+                <tr style="border-bottom: 1px solid var(--border-color);">
+                    <td style="padding: 0.5rem; font-weight: 600;">📋 Manifest File</td>
+                    <td style="padding: 0.5rem; font-family: monospace; font-size: 0.85rem; color: var(--text-muted);">Stored in package dir</td>
+                    <td style="padding: 0.5rem; font-size: 0.8rem; color: var(--text-secondary);">{{ package.manifest_path }}</td>
+                </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 1.5rem; margin-bottom: 1.5rem;">
+    <!-- Final Media Quality Gates Evaluation -->
+    <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <h2 style="font-size: 1.2rem; font-weight: 600; margin: 0;">
+                <span class="lang-en">Media Quality Gates (Guardrail D)</span>
+                <span class="lang-ar">بوابات جودة الوسائط الصوتية والمرئية</span>
+            </h2>
+            {% set q_passed = package.quality_gates.get('passed', false) %}
+            <span class="badge {% if q_passed %}badge-success{% else %}badge-danger{% endif %}">
+                {% if q_passed %}✓ PASS{% else %}✗ FAIL{% endif %}
+            </span>
+        </div>
+
+        {% if package.quality_gates.get('checks') %}
+        <div style="overflow-x: auto; font-size: 0.85rem;">
+            <table class="table" style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr style="border-bottom: 1px solid var(--border-color); text-align: start;">
+                        <th style="padding: 0.4rem;">Check</th>
+                        <th style="padding: 0.4rem;">Status</th>
+                        <th style="padding: 0.4rem;">Measured / Actual</th>
+                        <th style="padding: 0.4rem;">Requirement</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for c in package.quality_gates.get('checks', []) %}
+                    <tr style="border-bottom: 1px solid var(--border-color);">
+                        <td style="padding: 0.4rem; font-weight: 600;">{{ c.name }}</td>
+                        <td style="padding: 0.4rem;">
+                            {% if c.status == 'PASS' %}
+                            <span style="color: #10b981; font-weight: 700;">PASS</span>
+                            {% elif c.status == 'NOT_MEASURED' %}
+                            <span style="color: #f59e0b; font-weight: 700;">NOT MEASURED</span>
+                            {% else %}
+                            <span style="color: #ef4444; font-weight: 700;">FAIL</span>
+                            {% endif %}
+                        </td>
+                        <td style="padding: 0.4rem; font-family: monospace;">{{ c.actual }}</td>
+                        <td style="padding: 0.4rem; color: var(--text-secondary);">{{ c.expected }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p style="color: var(--text-secondary); font-size: 0.9rem;">No quality gate measurements recorded.</p>
+        {% endif %}
+    </div>
+
+    <!-- Strict License Preflight Report -->
+    <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <h2 style="font-size: 1.2rem; font-weight: 600; margin: 0;">
+                <span class="lang-en">License Preflight (ADR-008)</span>
+                <span class="lang-ar">تقرير فحص تراخيص الأصول</span>
+            </h2>
+            {% set l_passed = package.license_preflight.get('passed', false) %}
+            <span class="badge {% if l_passed %}badge-success{% else %}badge-danger{% endif %}">
+                {% if l_passed %}✓ CLEARED{% else %}✗ BLOCKED{% endif %}
+            </span>
+        </div>
+
+        <div style="font-size: 0.9rem; margin-bottom: 1rem;">
+            <strong>Total Assets Evaluated:</strong> {{ package.license_preflight.get('total_assets', 0) }} |
+            <span style="color: #10b981;">Verified: {{ package.license_preflight.get('verified_count', 0) }}</span> |
+            <span style="color: #ef4444;">Unverified: {{ package.license_preflight.get('unverified_count', 0) }}</span>
+        </div>
+
+        {% if package.license_preflight.get('asset_details') %}
+        <div style="overflow-x: auto; font-size: 0.85rem; max-height: 250px; overflow-y: auto;">
+            <table class="table" style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr style="border-bottom: 1px solid var(--border-color); text-align: start;">
+                        <th style="padding: 0.4rem;">Asset ID & Name</th>
+                        <th style="padding: 0.4rem;">Status</th>
+                        <th style="padding: 0.4rem;">Legal Basis</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for a in package.license_preflight.get('asset_details', []) %}
+                    <tr style="border-bottom: 1px solid var(--border-color);">
+                        <td style="padding: 0.4rem;">
+                            <div style="font-weight: 600;">{{ a.asset_name }}</div>
+                            <div style="font-family: monospace; font-size: 0.75rem; color: var(--text-secondary);">{{ a.asset_id }}</div>
+                        </td>
+                        <td style="padding: 0.4rem;">
+                            {% if a.passed %}
+                            <span style="color: #10b981;">✓ Verified</span>
+                            {% else %}
+                            <span style="color: #ef4444;" title="{{ a.failure_reason }}">✗ {{ a.verification_status }}</span>
+                            {% endif %}
+                        </td>
+                        <td style="padding: 0.4rem; font-size: 0.8rem;">{{ a.legal_basis or 'N/A' }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Grounded Platform Publishing Metadata -->
+<div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <h2 style="font-size: 1.2rem; font-weight: 600; margin: 0;">
+            <span class="lang-en">Grounded Platform Publishing Metadata (Guardrail F)</span>
+            <span class="lang-ar">بيانات النشر المنصاتية المستخرجة (غير مهلوسة)</span>
+        </h2>
+        <span class="badge badge-info">{{ package.platform }}</span>
+    </div>
+
+    {% set meta = package.metadata %}
+    <div style="display: grid; grid-template-columns: 1fr; gap: 1rem;">
+        <div>
+            <label style="font-weight: 600; display: block; margin-bottom: 0.25rem;">
+                Platform Title:
+                <span style="font-size: 0.8rem; color: var(--text-secondary); font-weight: normal;">
+                    ({{ meta.get('character_counts', {}).get('title', meta.get('title', '')|length) }} characters)
+                </span>
+            </label>
+            <input type="text" class="form-control" value="{{ meta.get('title', '') }}" readonly>
+        </div>
+
+        <div>
+            <label style="font-weight: 600; display: block; margin-bottom: 0.25rem;">
+                Description / Caption:
+                <span style="font-size: 0.8rem; color: var(--text-secondary); font-weight: normal;">
+                    ({{ meta.get('character_counts', {}).get('description', meta.get('description', '')|length) }} characters)
+                </span>
+            </label>
+            <textarea class="form-control" rows="8" readonly style="font-family: inherit; font-size: 0.9rem;">{{ meta.get('description', '') }}</textarea>
+        </div>
+
+        {% if meta.get('hashtags') %}
+        <div>
+            <label style="font-weight: 600; display: block; margin-bottom: 0.25rem;">Hashtags:</label>
+            <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+                {% for tag in meta.get('hashtags', []) %}
+                <span class="badge badge-secondary">{{ tag }}</span>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        {% if meta.get('chapters') %}
+        <div>
+            <label style="font-weight: 600; display: block; margin-bottom: 0.25rem;">Chapters & Timestamps:</label>
+            <div style="font-size: 0.85rem; line-height: 1.6; background: var(--bg-surface); padding: 0.75rem; border-radius: 6px;">
+                {% for ch in meta.get('chapters', []) %}
+                <div><code>{{ ch.timecode }}</code> - <strong>{{ ch.title }}</strong>: {{ ch.narration_summary }}</div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
