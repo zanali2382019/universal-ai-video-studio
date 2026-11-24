@@ -4,15 +4,35 @@
 
 {% block content %}
 {% set p_id = project.id or project.project_id %}
+{% if success_msg %}
+<div class="alert alert-success" style="margin-bottom: 1rem; padding: 0.75rem 1rem; border-radius: var(--radius-sm); background: rgba(16, 185, 129, 0.15); border: 1px solid #10b981; color: #10b981;">
+    {{ success_msg }}
+</div>
+{% endif %}
+{% if error_msg %}
+<div class="alert alert-danger" style="margin-bottom: 1rem; padding: 0.75rem 1rem; border-radius: var(--radius-sm); background: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; color: #ef4444;">
+    {{ error_msg }}
+</div>
+{% endif %}
+
 <div class="card">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
         <div>
-            <div style="display: flex; align-items: center; gap: 0.75rem;">
+            <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
                 <h1 style="font-size: 1.75rem; font-weight: 700; margin: 0;">
                     <span class="lang-en">Storyboard</span>
                     <span class="lang-ar">لوحة القصة</span>
                 </h1>
                 <span class="badge badge-info">{{ project.title or project.name }}</span>
+                {% if voiceover_asset %}
+                <span class="badge badge-success" title="Storage: {{ voiceover_asset.file_path }}">
+                    🎙️ <span class="lang-en">Voiceover Linked</span><span class="lang-ar">التعليق الصوتي جاهز</span>
+                </span>
+                {% else %}
+                <span class="badge badge-secondary">
+                    🎙️ <span class="lang-en">No Voiceover</span><span class="lang-ar">بدون تعليق صوتي</span>
+                </span>
+                {% endif %}
             </div>
             <p style="color: var(--text-secondary); margin-top: 0.25rem;">
                 <span class="lang-en">Browse, inspect, and reorder scenes. Edit prompts and manage visual flow.</span>
@@ -20,6 +40,10 @@
             </p>
         </div>
         <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+            <button type="button" class="btn btn-primary" onclick="openModal('generateVoiceoverModal')" id="btn-gen-voiceover" style="background: linear-gradient(135deg, #4f46e5, #7c3aed); border: none;">
+                <span class="lang-en">🎙️ AI Voiceover</span>
+                <span class="lang-ar">🎙️ توليد التعليق الصوتي</span>
+            </button>
             <button type="button" class="btn btn-success" onclick="openModal('addSceneModal')" id="btn-add-scene">
                 <span class="lang-en">+ Add Scene</span>
                 <span class="lang-ar">+ إضافة مشهد</span>
@@ -224,10 +248,122 @@
     </div>
 </div>
 
+<!-- Modal: Generate AI Voiceover -->
+<div class="modal-backdrop" id="generateVoiceoverModal">
+    <div class="modal" style="max-width: 650px;">
+        <div class="modal-header">
+            <h3 class="modal-title" style="display: flex; align-items: center; gap: 0.5rem;">
+                <span>🎙️</span>
+                <span class="lang-en">Generate AI Voiceover</span>
+                <span class="lang-ar">توليد التعليق الصوتي بالذكاء الاصطناعي</span>
+            </h3>
+            <button type="button" class="modal-close" onclick="closeModal('generateVoiceoverModal')">&times;</button>
+        </div>
+        <form method="POST" action="/storyboard/{{ project.channel_id }}/{{ p_id }}/generate-voiceover" onsubmit="this.querySelector('button[type=submit]').disabled=true; this.querySelector('button[type=submit]').innerText='Synthesizing... جاري التوليد';">
+            <div class="modal-body">
+                <p style="color: var(--text-secondary); margin-bottom: 1.25rem; font-size: 0.95rem;">
+                    <span class="lang-en">Synthesize sequence narration using Neural Speech Synthesis. The generated track is automatically registered in MAM and linked to this project timeline.</span>
+                    <span class="lang-ar">توليد نصوص المشاهد المتتالية باستخدام الذكاء الاصطناعي الصوتي. يتم تسجيل الملف الصوتي في MAM تلقائياً وربطه بمسار المشروع.</span>
+                </p>
+
+                <div class="grid grid-2" style="margin-bottom: 1rem;">
+                    <div class="form-group">
+                        <label for="vo_lang">
+                            <span class="lang-en">Language / اللغة</span>
+                            <span class="lang-ar">لغة الإلقاء</span>
+                        </label>
+                        <select id="vo_lang" name="language" class="form-control" required>
+                            <option value="ar" selected>العربية الفصحى (Arabic Fusha)</option>
+                            <option value="en">English (الإنجليزية)</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="vo_voice">
+                            <span class="lang-en">Voice & Tone / الصوت والنبرة</span>
+                            <span class="lang-ar">نبرة الصوت المولد</span>
+                        </label>
+                        <select id="vo_voice" name="voice_name" class="form-control" required>
+                            <optgroup label="العربية (Arabic Neural)">
+                                <option value="ar-SA-HamedNeural" selected>راوٍ دافئ وقصصي (فصحى - Hamed)</option>
+                                <option value="ar-SA-ZariyahNeural">راوية حنونة للأطفال (فصحى - Zariyah)</option>
+                                <option value="ar-EG-ShakirNeural">صوت شبابي ومرح (Shakir)</option>
+                                <option value="ar-EG-SalmaNeural">صوت نسائي حيوي (Salma)</option>
+                            </optgroup>
+                            <optgroup label="Gemini AI Studio (Cloud)">
+                                <option value="Enzo">Gemini Storyteller (Enzo)</option>
+                                <option value="Aoede">Gemini Gentle Bedtime (Aoede)</option>
+                            </optgroup>
+                            <optgroup label="English Narrative">
+                                <option value="en-US-ChristopherNeural">Christopher (Narrative Male)</option>
+                                <option value="en-US-AvaNeural">Ava (Narrative Female)</option>
+                            </optgroup>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 1rem;">
+                    <label for="vo_speed">
+                        <span class="lang-en">Speech Pace / سرعة الإلقاء: </span>
+                        <span class="lang-ar">سرعة القراءة: </span>
+                        <span id="vo-speed-label" style="font-weight: bold; color: var(--accent-color);">عادي (0%)</span>
+                    </label>
+                    <input type="range" id="vo_speed" name="speed_rate" min="-30" max="30" step="5" value="0" class="form-control" style="padding: 0;" oninput="document.getElementById('vo-speed-label').innerText = (this.value > 0 ? '+' : '') + this.value + '% ' + (this.value < 0 ? '(أهدأ لقصص النوم)' : (this.value > 0 ? '(أسرع)' : '(عادي)'));">
+                </div>
+
+                <!-- Aggregated Script Preview -->
+                <div class="form-group" style="margin-bottom: 1rem;">
+                    <label style="display: flex; justify-content: space-between; align-items: center;">
+                        <span>
+                            <span class="lang-en">Aggregated Script Preview ({{ scenes|length }} scenes)</span>
+                            <span class="lang-ar">معاينة النص الصوتي الإجمالي للمشاهد</span>
+                        </span>
+                        <span class="badge {% if narrated_scenes_count > 0 %}badge-success{% else %}badge-warning{% endif %}">
+                            {{ narrated_scenes_count }} / {{ scenes|length }}
+                            <span class="lang-en">narrated</span><span class="lang-ar">مشهد يحتوي نصاً</span>
+                        </span>
+                    </label>
+                    <div style="background: var(--bg-main); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 0.75rem 1rem; max-height: 180px; overflow-y: auto; font-size: 0.95rem; line-height: 1.6;">
+                        {% set ns = namespace(has_text=false) %}
+                        {% for sc in scenes %}
+                            {% set txt = sc.narration_text or sc.script_text %}
+                            {% if txt %}
+                                {% set ns.has_text = true %}
+                                <div style="margin-bottom: 0.5rem;">
+                                    <strong style="color: var(--accent-color);">[مشهد {{ sc.sequence_number or sc.scene_index }}]:</strong>
+                                    <span>{{ txt }}</span>
+                                </div>
+                            {% endif %}
+                        {% endfor %}
+                        {% if not ns.has_text %}
+                        <div style="color: var(--text-muted); font-style: italic;">
+                            <span class="lang-en">No narration texts found in project scenes. Please edit scene prompts or add narration text before generating.</span>
+                            <span class="lang-ar">لا توجد نصوص حوارية في مشاهد المشروع. يرجى تعديل المشاهد وكتابة نصوص الحوار أولاً.</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('generateVoiceoverModal')">
+                    <span class="lang-en">Cancel</span>
+                    <span class="lang-ar">إلغاء</span>
+                </button>
+                <button type="submit" class="btn btn-primary" style="background: linear-gradient(135deg, #4f46e5, #7c3aed); border: none;" {% if narrated_scenes_count == 0 %}disabled{% endif %}>
+                    <span class="lang-en">🎙️ Synthesize Voiceover</span>
+                    <span class="lang-ar">🎙️ توليد الصوت وحفظه في MAM</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <script>
 document.addEventListener("DOMContentLoaded", function() {
     if (window.location.hash === '#add-scene' || window.location.hash === '#addSceneModal') {
         openModal('addSceneModal');
+    } else if (window.location.hash === '#voiceover' || window.location.hash === '#generateVoiceoverModal') {
+        openModal('generateVoiceoverModal');
     }
 });
 </script>

@@ -669,6 +669,142 @@ class TestStudioWebUIIntegration(unittest.TestCase):
         self.assertIn("Verified", assets_after.text)
         self.assertIn("Approved", assets_after.text)
 
+    def test_storyboard_voiceover_generation_and_render_dispatch(self):
+        """Test AI voiceover generation from storyboard and render queue audio routing."""
+        channel_id = "ch_web_audio_test"
+        project_id = "proj_web_audio_001"
+        container = self.app.state.service_container
+
+        # 1. Create channel and project
+        container.channel_service.create_channel({
+            "id": channel_id,
+            "name": "Web Audio Channel",
+            "handle": "@webaudio",
+            "niche": "kids_animation",
+            "default_aspect_ratio": "9:16",
+        })
+        container.project_service.create_project(channel_id, {
+            "id": project_id,
+            "title": "Audio Story Episode",
+            "aspect_ratio": "9:16",
+        })
+
+        # Create dummy scene asset
+        dummy_vid = Path(self.test_dir) / "dummy_vid.mp4"
+        dummy_vid.write_bytes(b"DUMMY_MP4_CONTENT")
+        vid_asset = container.asset_service.ingest_asset(
+            channel_id=channel_id,
+            source_path=dummy_vid,
+            asset_type=AssetType.VIDEO,
+            project_id=project_id,
+            actor="test",
+        )
+
+        # 2. Create scenes with narration text
+        container.scene_service.create_scene(channel_id, project_id, {
+            "id": "sc_aud_01",
+            "project_id": project_id,
+            "channel_id": channel_id,
+            "sequence_number": 1,
+            "title": "Scene 1",
+            "narration_text": "مرحباً بكم في الحديقة الساحرة مع تومي اللطيف.",
+            "visual_prompt": "Tommy in the garden",
+            "duration_seconds": 4.0,
+            "metadata": {"asset_id": vid_asset.id},
+        })
+        container.scene_service.create_scene(channel_id, project_id, {
+            "id": "sc_aud_02",
+            "project_id": project_id,
+            "channel_id": channel_id,
+            "sequence_number": 2,
+            "title": "Scene 2",
+            "narration_text": "وفجأة ظهرت سحابة مضيئة تنشر البهجة والفرح.",
+            "visual_prompt": "Glowing cloud in garden",
+            "duration_seconds": 4.0,
+        })
+
+        # Check storyboard GET page shows Voiceover button and aggregated narration
+        story_get = self.client.get(f"/storyboard/{channel_id}/{project_id}")
+        self.assertEqual(story_get.status_code, 200)
+        self.assertIn("generateVoiceoverModal", story_get.text)
+        self.assertIn("مرحباً بكم في الحديقة الساحرة", story_get.text)
+
+        # Mock voice synthesis for unit test isolation
+        dummy_audio = Path(self.test_dir) / "dummy_vo.aac"
+        dummy_audio.write_bytes(b"AAC_DUMMY_AUDIO_DATA_FOR_TEST")
+
+        from unittest.mock import patch
+        with patch.object(
+            container.voice_service,
+            "synthesize_project_voiceover",
+            return_value={
+                "language": "ar",
+                "voice_name": "ar-SA-HamedNeural",
+                "is_neural": True,
+                "output_path": str(dummy_audio),
+                "file_size_bytes": dummy_audio.stat().st_size,
+                "format": "aac",
+                "project_id": project_id,
+                "combined_script": "مرحباً بكم في الحديقة الساحرة مع تومي اللطيف.  وفجأة ظهرت سحابة مضيئة تنشر البهجة والفرح.",
+            },
+        ):
+            # POST to generate voiceover
+            resp = self.client.post(
+                f"/storyboard/{channel_id}/{project_id}/generate-voiceover",
+                data={
+                    "voice_name": "ar-SA-HamedNeural",
+                    "language": "ar",
+                    "speed_rate": 0,
+                },
+                follow_redirects=False,
+            )
+            self.assertEqual(resp.status_code, 303)
+
+        # Verify project metadata is updated
+        proj = container.project_service.get_project(channel_id, project_id)
+        self.assertIsNotNone(proj.metadata_json)
+        self.assertIn("voiceover_asset_id", proj.metadata_json)
+        self.assertIn("voiceover_track_path", proj.metadata_json)
+        vo_asset_id = proj.metadata_json["voiceover_asset_id"]
+
+        # Verify asset registered in MAM and verified
+        asset = container.asset_service.get_asset(channel_id, vo_asset_id)
+        self.assertIsNotNone(asset)
+        self.assertEqual(asset.asset_type, AssetType.AUDIO)
+        self.assertEqual(asset.asset_category, "voiceover")
+
+        # 3. Test Render Queue Dispatch with Audio parameters
+        dispatch_resp = self.client.post(
+            "/render-queue/dispatch",
+            data={
+                "channel_id": channel_id,
+                "project_id": project_id,
+                "mode": "preview",
+                "aspect_ratio": "9:16",
+                "aspect_mode": "cover",
+                "transition": "fade",
+                "transition_duration_sec": 0.5,
+                "burn_subtitles": "true",
+                "voiceover_track_mode": "auto",
+                "background_music_mode": "whimsical",
+                "voiceover_volume": "1.0",
+                "background_music_volume": "0.2",
+            },
+            headers={"Accept": "application/json"},
+        )
+        self.assertEqual(dispatch_resp.status_code, 200)
+        data = dispatch_resp.json()
+        self.assertEqual(data["status"], "success")
+        task_id = data["task_id"]
+
+        # Verify task payload contains resolved audio paths and volumes
+        task = container.task_service.get_task(task_id)
+        self.assertIsNotNone(task)
+        self.assertIsNotNone(task.payload.get("voiceover_track_path"))
+        self.assertEqual(task.payload.get("voiceover_volume"), 1.0)
+        self.assertEqual(task.payload.get("background_music_volume"), 0.2)
+
+
 
 if __name__ == "__main__":
     unittest.main()

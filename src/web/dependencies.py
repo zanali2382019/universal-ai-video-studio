@@ -33,6 +33,7 @@ from src.services.batch_service import BatchService
 from src.services.render_service import RenderService
 from src.services.export_service import ExportService
 from src.services.intelligence_service import IntelligenceService
+from src.services.voice_service import VoiceSynthesisService
 from src.creative.channel_profile_service import ChannelProfileService
 from src.creative.character_bible_service import CharacterBibleService
 from src.creative.rules_engine import CreativeRulesEngine
@@ -118,6 +119,7 @@ class ServiceContainer:
             scene_repository=self.scene_repo,
             audit_service=self.audit_service,
         )
+        self.voice_service = VoiceSynthesisService()
 
         # Creative & Flow Services
         self.channel_profile_service = ChannelProfileService(self.storage)

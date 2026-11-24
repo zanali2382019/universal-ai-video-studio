@@ -2,12 +2,15 @@
 
 import re
 import uuid
+import urllib.parse
+from pathlib import Path
 from typing import Optional
 from fastapi import APIRouter, Request, Depends, Form
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
 from src.core.logger import get_logger
+from src.database.models import AssetType, LegalBasis, ProjectUpdate
 from src.web.dependencies import ServiceContainer, get_service_container
 
 router = APIRouter()
@@ -40,6 +43,19 @@ async def view_storyboard(
     except Exception as e:
         logger.warning(f"Failed to fetch characters for storyboard: {e}")
 
+    error_msg = request.query_params.get("error")
+    success_msg = request.query_params.get("success")
+
+    # Check for existing project voiceover asset
+    voiceover_asset = None
+    if project and project.metadata_json and project.metadata_json.get("voiceover_asset_id"):
+        try:
+            voiceover_asset = services.asset_service.get_asset(channel_id, project.metadata_json["voiceover_asset_id"])
+        except Exception:
+            pass
+
+    narrated_scenes_count = sum(1 for s in scenes if (getattr(s, "narration_text", None) or "").strip())
+
     return templates.TemplateResponse(
         request=request,
         name="storyboard.html",
@@ -48,6 +64,10 @@ async def view_storyboard(
             "scenes": scenes,
             "active_takes": active_takes,
             "characters": characters,
+            "error_msg": error_msg,
+            "success_msg": success_msg,
+            "voiceover_asset": voiceover_asset,
+            "narrated_scenes_count": narrated_scenes_count,
         },
     )
 
@@ -162,3 +182,89 @@ async def reorder_storyboard(
     return RedirectResponse(
         url=f"/storyboard/{channel_id}/{project_id}", status_code=303
     )
+
+
+@router.post("/storyboard/{channel_id}/{project_id}/generate-voiceover", response_class=RedirectResponse)
+async def generate_project_voiceover(
+    channel_id: str,
+    project_id: str,
+    voice_name: str = Form("ar-SA-HamedNeural"),
+    language: str = Form("ar"),
+    speed_rate: int = Form(0),
+    services: ServiceContainer = Depends(get_service_container),
+):
+    """Aggregate scene narrations and generate project voiceover via VoiceSynthesisService."""
+    clean_ch = channel_id.strip()
+    clean_prj = project_id.strip()
+
+    try:
+        scenes = services.scene_service.list_scenes(clean_ch, clean_prj)
+        if not scenes:
+            return RedirectResponse(
+                url=f"/storyboard/{clean_ch}/{clean_prj}?error=Project+has+no+scenes+to+synthesize",
+                status_code=303,
+            )
+
+        synth_res = services.voice_service.synthesize_project_voiceover(
+            channel_id=clean_ch,
+            project_id=clean_prj,
+            scenes=scenes,
+            language=language,
+            voice_name=voice_name,
+            rate=speed_rate,
+        )
+
+        audio_file_path = Path(synth_res["output_path"])
+
+        # Ingest into MAM via AssetService
+        media_asset = services.asset_service.ingest_asset(
+            channel_id=clean_ch,
+            source_path=audio_file_path,
+            asset_type=AssetType.AUDIO,
+            asset_category="voiceover",
+            project_id=clean_prj,
+            legal_basis=LegalBasis.PROPRIETARY_OWNERSHIP,
+            proof_file_path="AI Voiceover Generated via Studio WebUI",
+            actor="studio_webui",
+        )
+
+        # Verify license under ADR-008
+        if media_asset.license_reference:
+            try:
+                services.license_service.verify_license(
+                    channel_id=clean_ch,
+                    license_id=media_asset.license_reference,
+                    legal_basis=LegalBasis.PROPRIETARY_OWNERSHIP,
+                    verified_by="studio_webui",
+                    commercial_use_allowed=True,
+                    notes=f"AI Voiceover synthesized with voice '{voice_name}' and approved for timeline",
+                )
+            except Exception as lic_err:
+                logger.warning(f"Auto-license verification notice: {lic_err}")
+
+        # Update project metadata to attach this voiceover
+        curr_project = services.project_service.get_project(clean_ch, clean_prj)
+        meta = dict(curr_project.metadata_json or {})
+        meta["voiceover_asset_id"] = media_asset.id
+        meta["voiceover_track_path"] = media_asset.file_path
+        meta["voiceover_language"] = language
+        meta["voiceover_voice"] = voice_name
+
+        services.project_service.update_project(
+            clean_ch,
+            clean_prj,
+            ProjectUpdate(metadata=meta),
+        )
+
+        logger.info(f"Synthesized voiceover asset '{media_asset.id}' for project '{clean_prj}'.")
+        return RedirectResponse(
+            url=f"/storyboard/{clean_ch}/{clean_prj}?success=AI+Voiceover+generated+and+linked+successfully",
+            status_code=303,
+        )
+    except Exception as e:
+        logger.error(f"Voiceover generation failed for project '{clean_prj}': {e}", exc_info=True)
+        err_msg = urllib.parse.quote_plus(f"Voiceover generation failed: {str(e)}")
+        return RedirectResponse(
+            url=f"/storyboard/{clean_ch}/{clean_prj}?error={err_msg}",
+            status_code=303,
+        )

@@ -258,6 +258,67 @@
                 </div>
             </div>
 
+            <!-- Audio & Music Configuration (Task 3.15b) -->
+            <div style="border-top: 1px solid var(--border-color); padding-top: 1rem; margin-top: 1rem; margin-bottom: 1rem;">
+                <h4 style="font-size: 1rem; font-weight: 600; margin-bottom: 0.75rem; color: var(--accent-color); display: flex; align-items: center; gap: 0.5rem;">
+                    <span>🎵</span>
+                    <span class="lang-en">Audio & Background Music</span>
+                    <span class="lang-ar">الصوت والموسيقى التصويرية</span>
+                </h4>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                    <div>
+                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">
+                            <span class="lang-en">Voiceover Track / التعليق الصوتي</span>
+                        </label>
+                        <select name="voiceover_track_mode" id="modal-voiceover-select" class="form-control">
+                            <option value="auto" selected>Auto-detect Project Voiceover (تلقائي من المشروع)</option>
+                            <option value="none">None (بدون تعليق صوتي)</option>
+                            {% for a in audio_assets %}
+                            {% if 'voice' in a.file_name.lower() or a.asset_category == 'voiceover' %}
+                            <option value="{{ a.file_path }}" data-channel="{{ a.channel_id }}">{{ a.file_name }} ({{ a.id }})</option>
+                            {% endif %}
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div>
+                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">
+                            <span class="lang-en">Background Music / الموسيقى</span>
+                        </label>
+                        <select name="background_music_mode" id="modal-bgm-select" class="form-control">
+                            <option value="whimsical" selected>Whimsical Garden Melody (نغمة الحديقة الساحرة)</option>
+                            <option value="calm">Calm Bedtime Ambient (نغم هادئ للأطفال)</option>
+                            <option value="none">None (بدون موسيقى)</option>
+                            {% for a in audio_assets %}
+                            {% if 'music' in a.file_name.lower() or 'bgm' in a.file_name.lower() or a.asset_category == 'music' %}
+                            <option value="{{ a.file_path }}" data-channel="{{ a.channel_id }}">{{ a.file_name }} ({{ a.id }})</option>
+                            {% endif %}
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div>
+                        <label style="display: block; margin-bottom: 0.35rem; font-size: 0.85rem;">
+                            <span class="lang-en">Voiceover Volume: </span>
+                            <span class="lang-ar">مستوى صوت الراوي: </span>
+                            <span id="vo-vol-disp" style="font-weight: 600; color: var(--accent-color);">100%</span>
+                        </label>
+                        <input type="range" name="voiceover_volume" min="0" max="1.5" step="0.05" value="1.0" class="form-control" style="padding: 0;" oninput="document.getElementById('vo-vol-disp').innerText = Math.round(this.value * 100) + '%'">
+                    </div>
+                    <div>
+                        <label style="display: block; margin-bottom: 0.35rem; font-size: 0.85rem;">
+                            <span class="lang-en">Music Volume (Ducked): </span>
+                            <span class="lang-ar">مستوى الموسيقى (تلقائي الخفض): </span>
+                            <span id="bgm-vol-disp" style="font-weight: 600; color: var(--accent-color);">20%</span>
+                        </label>
+                        <input type="range" name="background_music_volume" min="0" max="1.0" step="0.05" value="0.2" class="form-control" style="padding: 0;" oninput="document.getElementById('bgm-vol-disp').innerText = Math.round(this.value * 100) + '%'">
+                    </div>
+                </div>
+            </div>
+
             <div style="margin-bottom: 1.5rem;">
                 <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
                     <input type="checkbox" name="burn_subtitles" value="true" checked>
@@ -276,18 +337,35 @@
 <script>
 function filterModalProjects(channelId) {
     const projSelect = document.getElementById('modal-project-select');
-    if (!projSelect) return;
-    const options = projSelect.querySelectorAll('option');
-    options.forEach(opt => {
-        if (!opt.value) return;
-        const ch = opt.getAttribute('data-channel');
-        if (!channelId || ch === channelId) {
-            opt.style.display = '';
-        } else {
-            opt.style.display = 'none';
-        }
+    if (projSelect) {
+        const options = projSelect.querySelectorAll('option');
+        options.forEach(opt => {
+            if (!opt.value) return;
+            const ch = opt.getAttribute('data-channel');
+            if (!channelId || ch === channelId) {
+                opt.style.display = '';
+            } else {
+                opt.style.display = 'none';
+            }
+        });
+        projSelect.value = '';
+    }
+
+    // Filter audio options if channel is selected
+    ['modal-voiceover-select', 'modal-bgm-select'].forEach(selId => {
+        const sel = document.getElementById(selId);
+        if (!sel) return;
+        sel.querySelectorAll('option').forEach(opt => {
+            const ch = opt.getAttribute('data-channel');
+            if (ch) {
+                if (!channelId || ch === channelId) {
+                    opt.style.display = '';
+                } else {
+                    opt.style.display = 'none';
+                }
+            }
+        });
     });
-    projSelect.value = '';
 }
 </script>
 {% endblock %}
